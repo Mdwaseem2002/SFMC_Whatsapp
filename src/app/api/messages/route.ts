@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import connectMongoDB from '@/lib/mongodb';
 import MessageModel from '@/models/Message';
+import ConversationModel from '@/models/Conversation';
 import { Message, MessageStatus } from '@/types';
 
 // Make sure connection is established only once
@@ -38,6 +39,8 @@ export async function POST(request: Request) {
           { status: 400 }
         );
       }
+      
+      const normalizedPhone = phoneNumber.replace(/^\+/, '');
 
       if (!message || typeof message !== 'object') {
         return NextResponse.json(
@@ -55,18 +58,30 @@ export async function POST(request: Request) {
           : new Date().toISOString(),
         sender: message.from === 'user' ? 'user' : 'contact',
         status: message.status || MessageStatus.DELIVERED,
-        recipientId: phoneNumber,
-        contactPhoneNumber: phoneNumber,
+        recipientId: normalizedPhone,
+        contactPhoneNumber: normalizedPhone,
         originalId: message.id,
-        conversationId: phoneNumber,
+        conversationId: normalizedPhone,
       };
 
       try {
-        // Use updateOne with upsert for better performance
         const result = await MessageModel.updateOne(
           { id: messageData.id }, // Find by ID
           { $setOnInsert: messageData }, // Only insert if not exists
           { upsert: true, lean: true } // Use upsert and lean
+        );
+
+        // Update or create conversation
+        await ConversationModel.updateOne(
+          { phoneNumber: normalizedPhone },
+          { 
+            $set: { 
+              lastMessage: messageData.content,
+              lastMessageTimestamp: messageData.timestamp 
+            },
+            $setOnInsert: { contactName: normalizedPhone, unreadCount: 0 }
+          },
+          { upsert: true }
         );
 
         // Send response for webhook
@@ -141,9 +156,11 @@ export async function GET(request: Request) {
           { status: 400 }
         );
       }
+      
+      const normalizedConversationId = conversationId.replace(/^\+/, '');
 
       // Build optimized query with optional timestamp filter
-      const query: Record<string, unknown> = { conversationId };
+      const query: Record<string, unknown> = { conversationId: normalizedConversationId };
       if (afterTimestamp) {
         query.timestamp = { $gt: new Date(afterTimestamp).toISOString() };
       }

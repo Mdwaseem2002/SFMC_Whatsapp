@@ -26,8 +26,15 @@ export async function GET(request: Request) {
     start(controller) {
       // Create a listener for new messages
       const messageListener = (message: Message) => {
-        const eventData = JSON.stringify(message);
-        controller.enqueue(`data: ${eventData}\n\n`);
+        try {
+          const eventData = JSON.stringify(message);
+          controller.enqueue(`data: ${eventData}\n\n`);
+        } catch (error) {
+          console.warn('Could not enqueue to closed SSE controller. Removing listener.');
+          if (messageEmitters[phoneNumber]) {
+            messageEmitters[phoneNumber].delete(messageListener);
+          }
+        }
       };
 
       // Initialize emitters for this phone number if not exists

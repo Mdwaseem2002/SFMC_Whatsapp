@@ -7,10 +7,23 @@ import WhatsAppConfig from '@/components/WhatsAppConfig';
 import ChatList from '@/components/ChatList';
 import ChatWindow from '@/components/ChatWindow';
 import AddRecipientModal from '@/components/AddRecipientModel';
+import TemplatesPanel from '@/components/TemplatesPanel';
+import BulkSendPanel from '@/components/BulkSendPanel';
 import { useRealtimeMessages } from '@/app/hooks/useRealtimeMessages';
 
 import { Contact, Message, MessageStatus } from '@/types';
 import { FaCog } from "react-icons/fa";
+
+type SidebarTab = 'chats' | 'templates' | 'bulk';
+
+interface TemplateForBulk {
+  id: string;
+  name: string;
+  language: string;
+  category: string;
+  status: string;
+  components: Array<{ type: string; text?: string }>;
+}
 
 export default function Home() {
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -23,6 +36,8 @@ export default function Home() {
     accessToken: '',
     phoneNumberId: ''
   });
+  const [activeTab, setActiveTab] = useState<SidebarTab>('chats');
+  const [preSelectedTemplate, setPreSelectedTemplate] = useState<TemplateForBulk | null>(null);
   
   // Load config from localStorage on component mount
   useEffect(() => {
@@ -225,6 +240,19 @@ export default function Home() {
     });
   };
 
+  // Handle "Use Template" from TemplatesPanel
+  const handleUseTemplate = (template: TemplateForBulk) => {
+    setPreSelectedTemplate(template);
+    setActiveTab('bulk');
+  };
+
+  // Tab icons and labels
+  const tabs: { key: SidebarTab; label: string; icon: string }[] = [
+    { key: 'chats', label: 'Chats', icon: '💬' },
+    { key: 'templates', label: 'Templates', icon: '📋' },
+    { key: 'bulk', label: 'Bulk Send', icon: '📢' },
+  ];
+
   return (
     <main className="flex h-screen bg-gray-100">
       {/* Left side - 30% width */}
@@ -253,25 +281,60 @@ export default function Home() {
           ) : null}
         </div>
 
-        {/* WhatsApp Configuration or Chat List */}
+        {/* WhatsApp Configuration or Tabbed Content */}
         {!isConfigured ? (
           <WhatsAppConfig onSave={handleConfigSave} />
         ) : (
           <>
-            <div className="p-4 border-b border-gray-300 bg-[#111B21]">
-              <button 
-                onClick={() => setShowAddModal(true)}
-                className="w-full bg-[#075E54] text-white py-2 rounded-md font-medium hover:bg-green-600 transition"
-              >
-                Add Recipient
-              </button>
+            {/* Tab Navigation */}
+            <div className="flex bg-[#111B21] border-b border-gray-800">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors relative ${
+                    activeTab === tab.key
+                      ? 'text-white'
+                      : 'text-gray-500 hover:text-gray-300'
+                  }`}
+                >
+                  <span className="text-sm">{tab.icon}</span>
+                  <span>{tab.label}</span>
+                  {/* Active indicator bar */}
+                  {activeTab === tab.key && (
+                    <span className="absolute bottom-0 left-1/4 right-1/4 h-0.5 bg-[#00A884] rounded-full" />
+                  )}
+                </button>
+              ))}
             </div>
-            <ChatList 
-              contacts={contacts} 
-              selectedContact={selectedContact}
-              onSelectContact={handleContactSelect}
-              messages={messages}
-            />
+
+            {/* Tab Content */}
+            {activeTab === 'chats' && (
+              <>
+                <div className="p-4 border-b border-gray-300 bg-[#111B21]">
+                  <button 
+                    onClick={() => setShowAddModal(true)}
+                    className="w-full bg-[#075E54] text-white py-2 rounded-md font-medium hover:bg-green-600 transition"
+                  >
+                    Add Recipient
+                  </button>
+                </div>
+                <ChatList 
+                  contacts={contacts} 
+                  selectedContact={selectedContact}
+                  onSelectContact={handleContactSelect}
+                  messages={messages}
+                />
+              </>
+            )}
+
+            {activeTab === 'templates' && (
+              <TemplatesPanel onUseTemplate={handleUseTemplate} />
+            )}
+
+            {activeTab === 'bulk' && (
+              <BulkSendPanel preSelectedTemplate={preSelectedTemplate} />
+            )}
           </>
         )}
       </div>

@@ -10,7 +10,8 @@ export function useRealtimeMessages(selectedContact: Contact | null) {
     // Initial fetch
     const fetchMessages = async () => {
       try {
-        const response = await fetch(`/api/messages?phoneNumber=${selectedContact.phoneNumber}`);
+        const normalizedPhone = selectedContact.phoneNumber.replace(/^\+/, '');
+        const response = await fetch(`/api/messages?phoneNumber=${normalizedPhone}`);
         const data = await response.json();
         
         if (data.messages && Array.isArray(data.messages)) {
@@ -23,16 +24,21 @@ export function useRealtimeMessages(selectedContact: Contact | null) {
 
     // Create an EventSource for real-time updates
     const setupEventSource = () => {
-      const eventSource = new EventSource(`/api/messages/stream?phoneNumber=${selectedContact.phoneNumber}`);
+      const normalizedPhone = selectedContact.phoneNumber.replace(/^\+/, '');
+      const eventSource = new EventSource(`/api/messages/stream?phoneNumber=${normalizedPhone}`);
 
       eventSource.onmessage = (event) => {
         const newMessage = JSON.parse(event.data);
         setMessages(prevMessages => {
-          // Avoid duplicates
-          const isDuplicate = prevMessages.some(msg => msg.id === newMessage.id);
-          return isDuplicate 
-            ? prevMessages 
-            : [...prevMessages, newMessage];
+          const index = prevMessages.findIndex(msg => msg.id === newMessage.id);
+          if (index !== -1) {
+            // Update existing message
+            const updated = [...prevMessages];
+            updated[index] = { ...updated[index], ...newMessage };
+            return updated;
+          }
+          // Add new message
+          return [...prevMessages, newMessage];
         });
       };
 

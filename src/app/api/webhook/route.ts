@@ -6,6 +6,8 @@
 import { NextResponse } from 'next/server';
 import connectMongoDB from '@/lib/mongodb';
 import { getSfmcAccessToken } from '@/lib/sfmcAuth';
+import MessageModel from '@/models/Message';
+import { MessageStatus } from '@/types';
 
 // ----- Idempotency: Track processed wamids in-memory -----
 const processedWamids = new Set<string>();
@@ -147,6 +149,19 @@ export async function POST(request: Request) {
 
                 const storeResult = await storeResponse.json();
                 console.log("[webhook] Message Storage Result:", storeResult);
+
+                // --- Emit SSE for real-time frontend update ---
+                if (storeResult.success) {
+                  const normalizedPhone = (message.from as string).replace(/^\+/, '');
+                  await fetch(`${appUrl}/api/messages/stream`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      phoneNumber: normalizedPhone,
+                      message: storeResult.message
+                    })
+                  }).catch(err => console.error('[webhook] SSE emit failed:', err));
+                }
               } catch (storeError) {
                 console.error("[webhook] Error storing message:", storeError);
               }
@@ -186,6 +201,57 @@ export async function POST(request: Request) {
             } catch (sfmcError) {
               console.error(`[webhook] SFMC write failed for ${wamid}:`, sfmcError);
               // Don't throw — we already acknowledged Meta
+            }
+
+            // ----- Update Message Status in MongoDB -----
+            try {
+              let mappedStatus = MessageStatus.FAILED;
+              if (statusValue === 'sent') mappedStatus = MessageStatus.SENT;
+              if (statusValue === 'delivered') mappedStatus = MessageStatus.DELIVERED;
+              if (statusValue === 'read') mappedStatus = MessageStatus.READ;
+
+              // Use original recipientId, or contactPhoneNumber if that's what was used
+              // Let's find the message first
+              const updatedMessage = await MessageModel.findOneAndUpdate(
+                { id: wamid },
+                { status: mappedStatus },
+                { new: true }
+              );
+
+              if (updatedMessage) {
+                console.log(`[webhook] DB Update: Message ${wamid} status changed to ${mappedStatus}`);
+                
+                // ----- Push to SSE Stream -----
+                const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+                
+                // Format the object properly for the broadasting API
+                const sseMessage = {
+                  id: updatedMessage.id,
+                  content: updatedMessage.content,
+                  timestamp: updatedMessage.timestamp,
+                  sender: updatedMessage.sender,
+                  status: updatedMessage.status,
+                  recipientId: updatedMessage.recipientId,
+                  contactPhoneNumber: updatedMessage.contactPhoneNumber
+                };
+
+                const sseResponse = await fetch(`${appUrl}/api/messages/stream`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    phoneNumber: updatedMessage.contactPhoneNumber || updatedMessage.recipientId,
+                    message: sseMessage
+                  })
+                });
+                
+                if (!sseResponse.ok) {
+                   console.error(`[webhook] Failed to broadcast status update via SSE for wamid=${wamid}`);
+                }
+              } else {
+                 console.log(`[webhook] Message with wamid=${wamid} not found in DB to update status.`);
+              }
+            } catch (dbError) {
+              console.error(`[webhook] DB update failed for ${wamid}:`, dbError);
             }
           }
         }

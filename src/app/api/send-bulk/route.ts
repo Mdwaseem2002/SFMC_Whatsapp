@@ -3,12 +3,17 @@
 // Respects Meta rate limit: max 1000 messages per minute
 
 import { NextResponse } from 'next/server';
+import connectMongoDB from '@/lib/mongodb';
+import MessageModel from '@/models/Message';
+import ConversationModel from '@/models/Conversation';
+import { MessageStatus } from '@/types';
 
 interface BulkContact {
   phone: string;
   templateName: string;
   language: string;
   parameters?: string[];
+  headerImageUrl?: string;
 }
 
 interface BulkResult {
@@ -82,6 +87,23 @@ export async function POST(request: Request) {
 
       // Build template components
       const templateComponents: Array<Record<string, unknown>> = [];
+      
+      // 1. Check for Header Media
+      if (contact.headerImageUrl) {
+        templateComponents.push({
+          type: 'header',
+          parameters: [
+            {
+              type: 'image',
+              image: {
+                link: contact.headerImageUrl
+              }
+            }
+          ]
+        });
+      }
+
+      // 2. Check for Body Text
       if (contact.parameters && contact.parameters.length > 0) {
         templateComponents.push({
           type: 'body',
@@ -138,6 +160,61 @@ export async function POST(request: Request) {
             success: true,
           });
           successCount++;
+
+          // ----- Save to MongoDB & Emit SSE -----
+          if (wamid) {
+            try {
+              await connectMongoDB();
+              const normalizedPhone = formattedPhone.replace(/^\+/, '');
+              
+              const paramText = contact.parameters && contact.parameters.length > 0 
+                ? ` [Params: ${contact.parameters.join(', ')}]` : '';
+              const bodyContent = `[Template: ${contact.templateName}]${paramText}`;
+
+              const messageData = {
+                id: wamid,
+                content: bodyContent,
+                timestamp: new Date().toISOString(),
+                sender: 'user',
+                status: MessageStatus.SENT,
+                recipientId: normalizedPhone,
+                contactPhoneNumber: normalizedPhone,
+                originalId: wamid,
+                conversationId: normalizedPhone,
+              };
+
+              await MessageModel.updateOne(
+                { id: wamid },
+                { $setOnInsert: messageData },
+                { upsert: true }
+              );
+
+              // Update or create conversation
+              await ConversationModel.updateOne(
+                { phoneNumber: normalizedPhone },
+                { 
+                  $set: { 
+                    lastMessage: bodyContent,
+                    lastMessageTimestamp: messageData.timestamp 
+                  },
+                  $setOnInsert: { contactName: normalizedPhone, unreadCount: 0 }
+                },
+                { upsert: true }
+              );
+
+              const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+              fetch(`${appUrl}/api/messages/stream`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  phoneNumber: normalizedPhone,
+                  message: messageData
+                })
+              }).catch(err => console.error('[send-bulk] SSE emit failed:', err));
+            } catch (dbError) {
+              console.error(`[send-bulk] Error saving to MongoDB for ${formattedPhone}:`, dbError);
+            }
+          }
         }
       } catch (sendError) {
         console.error(`[send-bulk] Exception for ${formattedPhone}:`, sendError);

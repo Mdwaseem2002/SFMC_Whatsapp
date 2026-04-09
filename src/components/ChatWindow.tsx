@@ -128,15 +128,15 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const getStatusIcon = (status: MessageStatus) => {
     switch (status) {
       case MessageStatus.PENDING:
-        return <span className="text-gray-400">🕒</span>;
-      case MessageStatus.SENT:
         return <span className="text-gray-400">✓</span>;
+      case MessageStatus.SENT:
+        return <span className="text-gray-400 tracking-[-0.15em] pr-1">✓✓</span>;
       case MessageStatus.DELIVERED:
-        return <span className="text-gray-400">✓✓</span>;
+        return <span className="text-gray-300 font-semibold tracking-[-0.15em] pr-1">✓✓</span>;
       case MessageStatus.READ:
-        return <span className="text-blue-400">✓✓</span>; 
+        return <span className="text-[#51e8c8] font-semibold tracking-[-0.15em] pr-1">✓✓</span>; 
       case MessageStatus.FAILED:
-        return <span className="text-red-500">⚠️</span>;
+        return <span className="text-red-500 font-bold">✗</span>;
       default:
         return '';
     }
