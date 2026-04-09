@@ -148,7 +148,7 @@ export async function GET(request: Request) {
       const afterTimestamp = searchParams.get('afterTimestamp');
       
       // Add limit parameter with a reasonable default
-      const limit = Number(searchParams.get('limit') || '20');
+      const limit = Number(searchParams.get('limit') || '500');
 
       if (!conversationId || typeof conversationId !== 'string') {
         return NextResponse.json(

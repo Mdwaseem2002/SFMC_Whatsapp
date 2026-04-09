@@ -131,8 +131,8 @@ const BulkSendPanel: React.FC<BulkSendPanelProps> = ({ preSelectedTemplate }) =>
   return (
     <div className="flex-1 overflow-y-auto bg-[#111B21]">
       {/* Header */}
-      <div className="sticky top-0 bg-[#111B21] p-3 border-b border-gray-800">
-        <h2 className="text-lg font-bold text-gray-100 flex items-center gap-2">
+      <div className="sticky top-0 bg-[#111B21]/95 backdrop-blur-sm p-3.5 border-b border-[#2a3942] z-10">
+        <h2 className="text-[15px] font-semibold text-[#e9edef] tracking-wide flex items-center gap-2">
           <span>📢</span> Bulk Send
         </h2>
       </div>
@@ -146,7 +146,7 @@ const BulkSendPanel: React.FC<BulkSendPanelProps> = ({ preSelectedTemplate }) =>
           <select
             value={selectedTemplateName}
             onChange={(e) => setSelectedTemplateName(e.target.value)}
-            className="w-full p-2.5 bg-[#2a3942] border border-gray-700 rounded-lg text-gray-100 text-sm focus:outline-none focus:border-teal-500 appearance-none cursor-pointer"
+            className="w-full p-2.5 bg-[#2a3942] border border-[#3b4f5a] rounded-xl text-[#e9edef] text-sm focus:outline-none focus:border-[#00A884] appearance-none cursor-pointer"
             disabled={templatesLoading}
           >
             <option value="">
@@ -170,10 +170,10 @@ const BulkSendPanel: React.FC<BulkSendPanelProps> = ({ preSelectedTemplate }) =>
             value={phoneNumbers}
             onChange={(e) => setPhoneNumbers(e.target.value)}
             placeholder={"+971501234567\n+971509876543\n+919876543210"}
-            className="w-full p-2.5 bg-[#2a3942] border border-gray-700 rounded-lg text-gray-100 text-sm focus:outline-none focus:border-teal-500 placeholder-gray-600 h-32 resize-none font-mono"
+            className="w-full p-2.5 bg-[#2a3942] border border-[#3b4f5a] rounded-xl text-[#e9edef] text-sm focus:outline-none focus:border-[#00A884] placeholder-[#667781] h-32 resize-none font-mono"
           />
           <div className="flex justify-between items-center mt-1">
-            <span className={`text-xs ${isOverLimit ? 'text-red-400' : 'text-gray-500'}`}>
+            <span className={`text-xs ${isOverLimit ? 'text-red-400' : 'text-[#667781]'}`}>
               {phoneCount} / 50 numbers entered
             </span>
             {isOverLimit && (
@@ -193,7 +193,7 @@ const BulkSendPanel: React.FC<BulkSendPanelProps> = ({ preSelectedTemplate }) =>
             type="text"
             value={language}
             onChange={(e) => setLanguage(e.target.value)}
-            className="w-full p-2.5 bg-[#2a3942] border border-gray-700 rounded-lg text-gray-100 text-sm focus:outline-none focus:border-teal-500"
+            className="w-full p-2.5 bg-[#2a3942] border border-[#3b4f5a] rounded-xl text-[#e9edef] text-sm focus:outline-none focus:border-[#00A884]"
             placeholder="en_US"
           />
         </div>
@@ -208,7 +208,7 @@ const BulkSendPanel: React.FC<BulkSendPanelProps> = ({ preSelectedTemplate }) =>
             type="text"
             value={headerImageUrl}
             onChange={(e) => setHeaderImageUrl(e.target.value)}
-            className="w-full p-2.5 bg-[#2a3942] border border-gray-700 rounded-lg text-gray-100 text-sm focus:outline-none focus:border-teal-500"
+            className="w-full p-2.5 bg-[#2a3942] border border-[#3b4f5a] rounded-xl text-[#e9edef] text-sm focus:outline-none focus:border-[#00A884]"
             placeholder="https://example.com/logo.png"
           />
         </div>
@@ -223,7 +223,7 @@ const BulkSendPanel: React.FC<BulkSendPanelProps> = ({ preSelectedTemplate }) =>
             type="text"
             value={parameters}
             onChange={(e) => setParameters(e.target.value)}
-            className="w-full p-2.5 bg-[#2a3942] border border-gray-700 rounded-lg text-gray-100 text-sm focus:outline-none focus:border-teal-500"
+            className="w-full p-2.5 bg-[#2a3942] border border-[#3b4f5a] rounded-xl text-[#e9edef] text-sm focus:outline-none focus:border-[#00A884]"
             placeholder="John, Order123"
           />
           <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
@@ -235,10 +235,10 @@ const BulkSendPanel: React.FC<BulkSendPanelProps> = ({ preSelectedTemplate }) =>
         <motion.button
           onClick={handleSend}
           disabled={loading || !selectedTemplateName || phoneCount === 0 || isOverLimit}
-          className={`w-full py-3 rounded-lg font-medium text-sm text-white flex items-center justify-center gap-2 transition-colors ${
+          className={`w-full py-3 rounded-xl font-medium text-sm text-white flex items-center justify-center gap-2 transition-colors ${
             loading || !selectedTemplateName || phoneCount === 0 || isOverLimit
-              ? 'bg-gray-700 cursor-not-allowed opacity-60'
-              : 'bg-[#075E54] hover:bg-emerald-700'
+              ? 'bg-[#2a3942] cursor-not-allowed opacity-60'
+              : 'bg-[#00A884] hover:bg-[#06cf9c]'
           }`}
           whileHover={!loading ? { scale: 1.02 } : {}}
           whileTap={!loading ? { scale: 0.98 } : {}}
@@ -265,12 +265,12 @@ const BulkSendPanel: React.FC<BulkSendPanelProps> = ({ preSelectedTemplate }) =>
         {/* Results */}
         {results && (
           <motion.div
-            className="bg-[#1f2c34] rounded-lg p-4 border border-gray-800 space-y-3"
+            className="bg-[#1f2c34] rounded-xl p-4 border border-[#2a3942] space-y-3"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <h3 className="text-sm font-semibold text-gray-100">Results</h3>
+            <h3 className="text-sm font-semibold text-[#e9edef]">Results</h3>
 
             <div className="flex gap-4">
               <div className="flex items-center gap-1 text-sm">
@@ -290,7 +290,7 @@ const BulkSendPanel: React.FC<BulkSendPanelProps> = ({ preSelectedTemplate }) =>
               <div>
                 <button
                   onClick={() => setShowFailed(!showFailed)}
-                  className="text-xs text-teal-400 hover:text-teal-300 flex items-center gap-1"
+                  className="text-xs text-[#00A884] hover:text-[#06cf9c] flex items-center gap-1"
                 >
                   <span className={`transform transition-transform ${showFailed ? 'rotate-90' : ''}`}>▶</span>
                   {showFailed ? 'Hide' : 'Show'} failed numbers

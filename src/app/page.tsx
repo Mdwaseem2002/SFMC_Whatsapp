@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { UserPlus } from 'lucide-react';
 import Image from 'next/image';
 import WhatsAppConfig from '@/components/WhatsAppConfig';
 import ChatList from '@/components/ChatList';
@@ -23,6 +24,11 @@ interface TemplateForBulk {
   category: string;
   status: string;
   components: Array<{ type: string; text?: string }>;
+}
+
+// Helper: normalize phone number by stripping leading '+'
+function normalizePhone(phone: string): string {
+  return phone.replace(/^\+/, '');
 }
 
 export default function Home() {
@@ -53,34 +59,27 @@ export default function Home() {
       setContacts(JSON.parse(savedContacts));
     }
 
-    const savedMessages = localStorage.getItem('whatsappMessages');
-    if (savedMessages) {
-      setMessages(JSON.parse(savedMessages));
-    }
+    // Note: We no longer load messages from localStorage — MongoDB is the source of truth
   }, []);
 
   // Update the messages state when real-time messages change
+  // This is the SINGLE source of truth for messages from the DB + SSE stream
   useEffect(() => {
     if (selectedContact && realtimeMessages.length > 0) {
+      const key = normalizePhone(selectedContact.phoneNumber);
       setMessages(prev => ({
         ...prev,
-        [selectedContact.phoneNumber]: realtimeMessages
+        [key]: realtimeMessages
       }));
     }
   }, [realtimeMessages, selectedContact]);
 
-  // Save data to localStorage whenever it changes
+  // Save contacts to localStorage whenever they change
   useEffect(() => {
     if (contacts.length > 0) {
       localStorage.setItem('whatsappContacts', JSON.stringify(contacts));
     }
   }, [contacts]);
-
-  useEffect(() => {
-    if (Object.keys(messages).length > 0) {
-      localStorage.setItem('whatsappMessages', JSON.stringify(messages));
-    }
-  }, [messages]);
 
   const handleConfigSave = (accessToken: string, phoneNumberId: string) => {
     const newConfig = { accessToken, phoneNumberId };
@@ -94,12 +93,30 @@ export default function Home() {
     setShowAddModal(false);
   };
 
+  const handleEditContact = (updatedContact: Contact) => {
+    setContacts(prev => prev.map(c => c.id === updatedContact.id ? updatedContact : c));
+    // Update selected contact if it's the one being edited
+    if (selectedContact?.id === updatedContact.id) {
+      setSelectedContact(updatedContact);
+    }
+  };
+
+  const handleDeleteContact = (contactId: string) => {
+    setContacts(prev => prev.filter(c => c.id !== contactId));
+    // Deselect if deleted contact was selected
+    if (selectedContact?.id === contactId) {
+      setSelectedContact(null);
+    }
+  };
+
   const handleContactSelect = (contact: Contact) => {
     setSelectedContact(contact);
   };
 
   const sendMessage = async (content: string) => {
     if (!selectedContact) return;
+
+    const key = normalizePhone(selectedContact.phoneNumber);
 
     // Create a new message
     const newMessage: Message = {
@@ -108,13 +125,13 @@ export default function Home() {
       timestamp: new Date().toISOString(),
       sender: 'user',
       status: MessageStatus.PENDING,
-      recipientId: selectedContact.phoneNumber,
-      attachments: false  // Use boolean value here, not an array
+      recipientId: key,
+      attachments: false
     };
 
     // Update messages state with the new message
     setMessages(prev => {
-      const contactMessages = prev[selectedContact.phoneNumber] || [];
+      const contactMessages = prev[key] || [];
       const updatedMessages = [...contactMessages, newMessage];
       
       // Also store message on the server
@@ -124,7 +141,7 @@ export default function Home() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          phoneNumber: selectedContact.phoneNumber,
+          phoneNumber: key,
           message: {
             id: newMessage.id,
             text: { body: content },
@@ -136,7 +153,7 @@ export default function Home() {
 
       return {
         ...prev,
-        [selectedContact.phoneNumber]: updatedMessages
+        [key]: updatedMessages
       };
     });
 
@@ -163,64 +180,32 @@ export default function Home() {
 
       // Update message status to sent
       setMessages(prev => {
-        const contactMessages = prev[selectedContact.phoneNumber].map(msg => 
+        const contactMessages = (prev[key] || []).map(msg => 
           msg.id === newMessage.id ? { ...msg, status: MessageStatus.SENT } : msg
         );
         return {
           ...prev,
-          [selectedContact.phoneNumber]: contactMessages
+          [key]: contactMessages
         };
       });
     } catch (error) {
       console.error('Error sending message:', error);
       // Update message status to failed
       setMessages(prev => {
-        const contactMessages = prev[selectedContact.phoneNumber].map(msg => 
+        const contactMessages = (prev[key] || []).map(msg => 
           msg.id === newMessage.id ? { ...msg, status: MessageStatus.FAILED } : msg
         );
         return {
           ...prev,
-          [selectedContact.phoneNumber]: contactMessages
+          [key]: contactMessages
         };
       });
     }
   };
 
-  // Enhanced message fetching with logging
-  useEffect(() => {
-    const fetchMessages = async () => {
-      if (!selectedContact) return;
-
-      try {
-        console.log(`Fetching messages for phone number: ${selectedContact.phoneNumber}`);
-        
-        const response = await fetch(`/api/messages?phoneNumber=${selectedContact.phoneNumber}`);
-        const data = await response.json();
-        
-        console.log('Fetched Messages:', data);
-        
-        if (data.messages && Array.isArray(data.messages)) {
-          setMessages(prev => ({
-            ...prev,
-            [selectedContact.phoneNumber]: data.messages
-          }));
-          
-          console.log(`Updated messages for ${selectedContact.phoneNumber}:`, 
-            data.messages.length);
-        } else {
-          console.warn('No messages found or invalid response', data);
-        }
-      } catch (error) {
-        console.error('Error fetching messages:', error);
-      }
-    };
-
-    fetchMessages();
-  }, [selectedContact]);
-
-
   // Mock function to simulate receiving a message
   const simulateIncomingMessage = (contact: Contact, content: string) => {
+    const key = normalizePhone(contact.phoneNumber);
     const incomingMessage: Message = {
       id: Date.now().toString(),
       content,
@@ -232,10 +217,10 @@ export default function Home() {
     };
 
     setMessages(prev => {
-      const contactMessages = prev[contact.phoneNumber] || [];
+      const contactMessages = prev[key] || [];
       return {
         ...prev,
-        [contact.phoneNumber]: [...contactMessages, incomingMessage]
+        [key]: [...contactMessages, incomingMessage]
       };
     });
   };
@@ -253,31 +238,34 @@ export default function Home() {
     { key: 'bulk', label: 'Bulk Send', icon: '📢' },
   ];
 
+  // Get messages for a contact using normalized phone key
+  const getContactMessages = (phoneNumber: string): Message[] => {
+    return messages[normalizePhone(phoneNumber)] || [];
+  };
+
   return (
-    <main className="flex h-screen bg-gray-100">
+    <main className="flex h-screen bg-[#0b141a]">
       {/* Left side - 30% width */}
-      <div className="w-3/10 h-full flex flex-col border-r border-gray-300 bg-white">
+      <div className="w-3/10 h-full flex flex-col border-r border-[#2a3942] bg-[#111B21]">
         {/* WhatsApp logo and config */}
-        <div className="p-4 flex justify-between items-center bg-[#111B21] text-white">
-
+        <div className="px-4 py-3 flex justify-between items-center bg-[#1f2c34] border-b border-[#2a3942]">
           <div className="flex items-center">
-          <Image 
-            src="/image-removebg-preview (21).png" 
-            alt="WhatsApp Logo" 
-            width={60} 
-            height={60} 
-            className="mr-2"
-          />
-
-            <h1 className="text-xl font-bold">WhatsZapp</h1>
+            <Image 
+              src="/image-removebg-preview (21).png" 
+              alt="WhatsApp Logo" 
+              width={40} 
+              height={40} 
+              className="mr-2.5"
+            />
+            <h1 className="text-[17px] font-semibold text-[#e9edef]">WhatsZapp</h1>
           </div>
           {isConfigured ? (
             <button 
-            onClick={() => setIsConfigured(false)}
-            className="text-sm bg-green-600 px-2 py-1 rounded text-white flex items-center"
-          >
-            <FaCog className="text-white text-lg" />
-          </button>
+              onClick={() => setIsConfigured(false)}
+              className="text-[#8696a0] hover:text-[#e9edef] p-2 rounded-full hover:bg-[#2a3942] transition-colors"
+            >
+              <FaCog size={16} />
+            </button>
           ) : null}
         </div>
 
@@ -287,15 +275,15 @@ export default function Home() {
         ) : (
           <>
             {/* Tab Navigation */}
-            <div className="flex bg-[#111B21] border-b border-gray-800">
+            <div className="flex bg-[#1f2c34] border-b border-[#2a3942]">
               {tabs.map((tab) => (
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
                   className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors relative ${
                     activeTab === tab.key
-                      ? 'text-white'
-                      : 'text-gray-500 hover:text-gray-300'
+                      ? 'text-[#e9edef]'
+                      : 'text-[#8696a0] hover:text-[#e9edef]'
                   }`}
                 >
                   <span className="text-sm">{tab.icon}</span>
@@ -311,11 +299,12 @@ export default function Home() {
             {/* Tab Content */}
             {activeTab === 'chats' && (
               <>
-                <div className="p-4 border-b border-gray-300 bg-[#111B21]">
+                <div className="px-3 pt-3 pb-2 bg-[#111B21]">
                   <button 
                     onClick={() => setShowAddModal(true)}
-                    className="w-full bg-[#075E54] text-white py-2 rounded-md font-medium hover:bg-green-600 transition"
+                    className="w-full bg-[#00A884] hover:bg-[#06cf9c] text-white py-2.5 rounded-xl font-medium transition-colors text-sm flex items-center justify-center gap-2"
                   >
+                    <UserPlus size={16} />
                     Add Recipient
                   </button>
                 </div>
@@ -323,6 +312,8 @@ export default function Home() {
                   contacts={contacts} 
                   selectedContact={selectedContact}
                   onSelectContact={handleContactSelect}
+                  onEditContact={handleEditContact}
+                  onDeleteContact={handleDeleteContact}
                   messages={messages}
                 />
               </>
@@ -340,26 +331,28 @@ export default function Home() {
       </div>
 
       {/* Right side - 70% width */}
-      <div className="w-7/10 h-full flex flex-col bg-gray-200">
+      <div className="w-7/10 h-full flex flex-col bg-[#0b141a]">
         {selectedContact ? (
           <ChatWindow 
             contact={selectedContact}
-            messages={messages[selectedContact.phoneNumber] || []}
+            messages={getContactMessages(selectedContact.phoneNumber)}
             onSendMessage={sendMessage}
-            onSimulateIncoming={() => simulateIncomingMessage(selectedContact, 'This is a test reply')} onCloseChat={function (): void {
-              throw new Error('Function not implemented.');
-            } }          />
+            onSimulateIncoming={() => simulateIncomingMessage(selectedContact, 'This is a test reply')}
+            onCloseChat={() => setSelectedContact(null)}
+          />
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-gray-500">
-      <Image 
-        src="/image-removebg-preview (22).png"  // Updated path for public/image.png
-        alt="Background Image" 
-        width={200} 
-        height={200} 
-        className="opacity-50 mb-4"
-      />
-      <p className="text-xl">Select a chat to start messaging</p>
-    </div>
+          <div className="flex-1 flex flex-col items-center justify-center">
+            <Image 
+              src="/image-removebg-preview (22).png"
+              alt="WhatsZapp" 
+              width={180} 
+              height={180} 
+              className="opacity-30 mb-5"
+            />
+            <p className="text-[#e9edef] text-lg font-light">WhatsZapp for Business</p>
+            <p className="text-[#8696a0] text-sm mt-1">Select a chat to start messaging</p>
+            <div className="mt-4 w-16 h-[1px] bg-[#2a3942]"></div>
+          </div>
         )}
       </div>
 

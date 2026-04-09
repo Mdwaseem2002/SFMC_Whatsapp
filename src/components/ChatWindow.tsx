@@ -7,19 +7,14 @@ interface ChatWindowProps {
   contact: Contact;
   messages: Message[];
   onSendMessage: (content: string) => void;
-  onSimulateIncoming: () => void; // For testing only
+  onSimulateIncoming: () => void;
   onCloseChat: () => void;
 }
 
-// Improved date and time formatting utility functions
 const formatMessageTime = (timestamp: string | number | Date) => {
   if (!timestamp) return '';
-  
   const date = new Date(timestamp);
-  
-  // Check if the date is valid
-  if (isNaN(date.getTime())) return 'Invalid time';
-  
+  if (isNaN(date.getTime())) return '';
   return date.toLocaleTimeString('en-US', { 
     hour: '2-digit', 
     minute: '2-digit',
@@ -29,55 +24,32 @@ const formatMessageTime = (timestamp: string | number | Date) => {
 
 const formatLastSeen = (timestamp: string | number | Date | undefined) => {
   if (!timestamp) return 'Offline';
-  
   const date = new Date(timestamp);
-  
-  // Check if the date is valid
   if (isNaN(date.getTime())) return 'Offline';
-  
   const now = new Date();
   const diffMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
-  
-  
-  if (diffMinutes < 1) return 'Just now';
+  if (diffMinutes < 1) return 'Online';
   if (diffMinutes < 60) return `${diffMinutes} min ago`;
-  
   const diffHours = Math.floor(diffMinutes / 60);
   if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-  
   const diffDays = Math.floor(diffHours / 24);
   if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-  
-  return date.toLocaleDateString('en-US', { 
-    month: 'short', 
-    day: 'numeric',
-    year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
-  });
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 };
 
 const getMessageDate = (timestamp: string | number | Date) => {
   if (!timestamp) return 'Unknown';
-  
   const date = new Date(timestamp);
-  
-  // Check if the date is valid
   if (isNaN(date.getTime())) return 'Unknown';
-  
   const today = new Date();
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
-  
-  if (date.toDateString() === today.toDateString()) {
-    return 'Today';
-  } else if (date.toDateString() === yesterday.toDateString()) {
-    return 'Yesterday';
-  } else {
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric',
-      year: date.getFullYear() !== today.getFullYear() ? 'numeric' : undefined
-    });
-  }
+  if (date.toDateString() === today.toDateString()) return 'Today';
+  if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
+  return date.toLocaleDateString('en-US', { 
+    month: 'short', day: 'numeric',
+    year: date.getFullYear() !== today.getFullYear() ? 'numeric' : undefined
+  });
 };
 
 const ChatWindow: React.FC<ChatWindowProps> = ({
@@ -89,185 +61,153 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 }) => {
   const [newMessage, setNewMessage] = useState('');
   const [showEmoji, setShowEmoji] = useState(false);
-  const [showAttachments, setShowAttachments] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
+  // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  // Simulate loading state
+  useEffect(() => {
+    setIsLoading(true);
+    const timer = setTimeout(() => setIsLoading(false), 400);
+    return () => clearTimeout(timer);
+  }, [contact.id]);
+
+  const handleSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault();
     if (newMessage.trim()) {
       onSendMessage(newMessage.trim());
       setNewMessage('');
+      setShowEmoji(false);
+      inputRef.current?.focus();
     }
-    inputRef.current?.focus();
   };
 
-  const handleAttachmentClick = () => {
-    setShowAttachments(!showAttachments);
-  };
-
-  const handleFileInputClick = () => {
-    fileInputRef.current?.click();
-  };
-
+  const handleFileInputClick = () => fileInputRef.current?.click();
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      // Here you would typically upload the file and then send it
-      // For now, just send a message about the attachment
-      const file = e.target.files[0];
-      onSendMessage(`Sent attachment: ${file.name}`);
-      setShowAttachments(false);
-    }
+    const file = e.target.files?.[0];
+    if (file) console.log('Selected file:', file.name);
   };
 
-  const getStatusIcon = (status: MessageStatus) => {
+  const getStatusIcon = (status: string | undefined) => {
     switch (status) {
       case MessageStatus.PENDING:
-        return <span className="text-gray-400">✓</span>;
+        return <span className="text-[#667781]">✓</span>;
       case MessageStatus.SENT:
-        return <span className="text-gray-400 tracking-[-0.15em] pr-1">✓✓</span>;
+        return <span className="text-[#667781] tracking-[-0.15em]">✓✓</span>;
       case MessageStatus.DELIVERED:
-        return <span className="text-gray-300 font-semibold tracking-[-0.15em] pr-1">✓✓</span>;
+        return <span className="text-[#667781] tracking-[-0.15em]">✓✓</span>;
       case MessageStatus.READ:
-        return <span className="text-[#51e8c8] font-semibold tracking-[-0.15em] pr-1">✓✓</span>; 
+        return <span className="text-[#53bdeb] tracking-[-0.15em]">✓✓</span>; 
       case MessageStatus.FAILED:
-        return <span className="text-red-500 font-bold">✗</span>;
+        return <span className="text-red-400 font-bold">✗</span>;
       default:
-        return '';
+        return <span className="text-[#667781]">✓</span>;
     }
   };
 
   // Group messages by date
   const groupedMessages = messages.reduce((groups, message) => {
-    // Ensure timestamp is a number
     const timestamp = typeof message.timestamp === 'string' 
       ? new Date(message.timestamp).getTime() 
       : message.timestamp;
-    
-    // Use a safe timestamp for grouping
     const messageDate = getMessageDate(timestamp);
-    
-    if (!groups[messageDate]) {
-      groups[messageDate] = [];
-    }
+    if (!groups[messageDate]) groups[messageDate] = [];
     groups[messageDate].push(message);
     return groups;
   }, {} as Record<string, Message[]>);
 
+  const avatarColor = (() => {
+    const colors = ['#00A884', '#34B7F1', '#F15C6D', '#A15CDE', '#F1AE5C', '#5CCEF1'];
+    const hash = contact.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return colors[hash % colors.length];
+  })();
+
+  const initials = contact.name.split(' ').map(w => w.charAt(0).toUpperCase()).slice(0, 2).join('');
+
   return (
-    <div className="flex flex-col h-full bg-[#0c1317] rounded-lg overflow-hidden shadow-xl">
-      {/* Chat header */}
-      <div className="flex items-center p-3 bg-[#1f2c34] text-gray-200">
+    <div className="flex flex-col h-full bg-[#0b141a] overflow-hidden">
+      {/* ─── Chat Header ─── */}
+      <div className="flex items-center px-4 py-2.5 bg-[#1f2c34] border-b border-[#2a3942]">
         <motion.button 
           onClick={onCloseChat} 
-          className="mr-3 text-gray-300 hover:text-white rounded-full p-1 hover:bg-gray-700"
-          whileHover={{ scale: 1.1 }}
+          className="mr-2 text-[#8696a0] hover:text-[#e9edef] rounded-full p-1.5 hover:bg-[#2a3942] transition-colors"
           whileTap={{ scale: 0.9 }}
         >
-          <ChevronLeft size={24} />
+          <ChevronLeft size={22} />
         </motion.button>
-        <motion.div 
-          className="w-12 h-12 flex items-center justify-center bg-gradient-to-br from-emerald-500 to-teal-700 rounded-full mr-3 overflow-hidden"
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.3 }}
+
+        <div 
+          className="w-10 h-10 flex items-center justify-center rounded-full mr-3 flex-shrink-0 text-white font-semibold text-sm"
+          style={{ backgroundColor: avatarColor }}
         >
-          {/* Always show the first letter of contact name */}
-          <span className="text-lg font-bold uppercase text-white">
-            {contact.name.charAt(0)}
-          </span>
-        </motion.div>
-        <div className="flex-1">
-          <h2 className="font-bold text-gray-100">{contact.name}</h2>
-          <p className="text-xs text-gray-400 flex items-center">
+          {initials}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <h2 className="text-[15px] font-medium text-[#e9edef] truncate">{contact.name}</h2>
+          <p className="text-[11px] text-[#8696a0]">
             {contact.online ? (
-              <>
-                <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-1"></span>
-                <span>Online</span>
-              </>
+              <span className="text-[#00A884]">Online</span>
             ) : (
               formatLastSeen(contact.lastSeen)
             )}
           </p>
         </div>
-        <div className="flex items-center space-x-3">
-          <motion.button 
-            className="text-gray-300 hover:text-white p-2 rounded-full hover:bg-gray-700"
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-          >
-            <Video size={20} />
-          </motion.button>
-          <motion.button 
-            className="text-gray-300 hover:text-white p-2 rounded-full hover:bg-gray-700"
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-          >
-            <Phone size={20} />
-          </motion.button>
-          <motion.button 
-            className="text-gray-300 hover:text-white p-2 rounded-full hover:bg-gray-700"
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-          >
-            <Search size={20} />
-          </motion.button>
-          <motion.button
-            onClick={onSimulateIncoming}
-            className="text-xs bg-green-800 px-2 py-1 rounded opacity-70 hover:opacity-100"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            Test
-          </motion.button>
-          <motion.button 
-            className="text-gray-300 hover:text-white p-2 rounded-full hover:bg-gray-700"
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-          >
-            <MoreVertical size={20} />
-          </motion.button>
+
+        <div className="flex items-center gap-1">
+          <button className="text-[#8696a0] hover:text-[#e9edef] p-2 rounded-full hover:bg-[#2a3942] transition-colors">
+            <Video size={18} />
+          </button>
+          <button className="text-[#8696a0] hover:text-[#e9edef] p-2 rounded-full hover:bg-[#2a3942] transition-colors">
+            <Phone size={18} />
+          </button>
+          <button className="text-[#8696a0] hover:text-[#e9edef] p-2 rounded-full hover:bg-[#2a3942] transition-colors">
+            <Search size={18} />
+          </button>
+          <button className="text-[#8696a0] hover:text-[#e9edef] p-2 rounded-full hover:bg-[#2a3942] transition-colors">
+            <MoreVertical size={18} />
+          </button>
         </div>
       </div>
 
-      {/* Chat messages */}
+      {/* ─── Chat Messages ─── */}
       <div
-        className="flex-1 overflow-y-auto p-4"
-        style={{
-          backgroundImage: 'url(/whatsapp-dark-bg.png)',
-          backgroundSize: 'repeat',
-          backgroundColor: '#0b141a',
-        }}
+        ref={messagesContainerRef}
+        className="flex-1 overflow-y-auto px-[6%] py-3"
+        style={{ backgroundColor: '#0b141a' }}
       >
-        {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full space-y-4">
-            <motion.div 
-              className="w-16 h-16 flex items-center justify-center bg-gray-700 rounded-full"
-              initial={{ opacity: 0, scale: 0.5 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, type: "spring" }}
-            >
-              <Send size={32} className="text-gray-400" />
-            </motion.div>
-            <motion.p 
-              className="text-gray-400 bg-gray-800 bg-opacity-70 p-4 rounded-lg text-center"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.5 }}
-            >
-              No messages yet.<br />Start the conversation with {contact.name}!
-            </motion.p>
+        {/* Loading State */}
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center h-full">
+            <div className="relative w-8 h-8">
+              <div className="absolute inset-0 border-2 border-[#00A884] border-t-transparent rounded-full animate-spin"></div>
+            </div>
+            <p className="text-[#667781] text-xs mt-3">Loading messages...</p>
+          </div>
+        ) : messages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full">
+            <div className="bg-[#1f2c34] rounded-xl px-6 py-4 text-center max-w-xs shadow-lg border border-[#2a3942]">
+              <p className="text-[#e9edef] text-sm">
+                No messages yet.
+              </p>
+              <p className="text-[#8696a0] text-xs mt-1">
+                Send a message to start chatting with {contact.name}
+              </p>
+            </div>
           </div>
         ) : (
           Object.entries(groupedMessages).map(([date, dateMessages]) => (
             <div key={date}>
+              {/* Date separator */}
               <div className="flex justify-center my-3">
-                <span className="bg-gray-700 text-gray-300 text-xs px-3 py-1 rounded-full">
+                <span className="bg-[#1f2c34] text-[#8696a0] text-[11px] px-3 py-1.5 rounded-lg shadow-sm border border-[#2a3942]">
                   {date}
                 </span>
               </div>
@@ -275,50 +215,58 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               {dateMessages.map((message, index) => {
                 const isSent = message.sender === 'user';
                 const prevMessage = index > 0 ? dateMessages[index - 1] : null;
-                const nextMessage = index < dateMessages.length - 1 ? dateMessages[index + 1] : null;
-                
                 const isFirstInGroup = !prevMessage || prevMessage.sender !== message.sender;
-                const isLastInGroup = !nextMessage || nextMessage.sender !== message.sender;
-                
-                // Calculate border radius for group chat bubbles
-                let borderRadiusClass = "rounded-lg";
-                if (isSent) {
-                  if (isFirstInGroup && isLastInGroup) borderRadiusClass = "rounded-lg";
-                  else if (isFirstInGroup) borderRadiusClass = "rounded-bl-lg rounded-tl-lg rounded-tr-lg rounded-br-sm";
-                  else if (isLastInGroup) borderRadiusClass = "rounded-bl-lg rounded-tl-sm rounded-tr-lg rounded-br-lg";
-                  else borderRadiusClass = "rounded-bl-lg rounded-tl-sm rounded-tr-lg rounded-br-sm";
-                } else {
-                  if (isFirstInGroup && isLastInGroup) borderRadiusClass = "rounded-lg";
-                  else if (isFirstInGroup) borderRadiusClass = "rounded-bl-sm rounded-tl-lg rounded-tr-lg rounded-br-lg";
-                  else if (isLastInGroup) borderRadiusClass = "rounded-bl-lg rounded-tl-lg rounded-tr-sm rounded-br-lg";
-                  else borderRadiusClass = "rounded-bl-lg rounded-tl-lg rounded-tr-sm rounded-br-sm";
-                }
 
                 return (
-                  <motion.div
+                  <div
                     key={message.id}
-                    className={`flex ${isSent ? 'justify-end' : 'justify-start'} ${isFirstInGroup ? 'mt-3' : 'mt-1'} ${isLastInGroup ? 'mb-3' : 'mb-1'}`}
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ duration: 0.2 }}
+                    className={`flex ${isSent ? 'justify-end' : 'justify-start'} ${isFirstInGroup ? 'mt-2' : 'mt-[3px]'}`}
                   >
                     <div
-                      className={`max-w-xs md:max-w-md p-3 shadow-md ${borderRadiusClass} ${
+                      className={`relative max-w-[65%] px-[9px] pt-[6px] pb-[7px] shadow-sm ${
                         isSent 
-                          ? 'bg-gradient-to-r from-emerald-700 to-teal-800 text-gray-100' 
-                          : 'bg-[#1f2c34] text-gray-200'
+                          ? 'bg-[#005c4b] rounded-lg' 
+                          : 'bg-[#1f2c34] rounded-lg'
+                      } ${
+                        isSent && isFirstInGroup ? 'rounded-tr-none' : ''
+                      } ${
+                        !isSent && isFirstInGroup ? 'rounded-tl-none' : ''
                       }`}
                     >
-                      {/* Message content with inline timestamp */}
+                      {/* Tail for first message in group */}
+                      {isFirstInGroup && isSent && (
+                        <div className="absolute -right-[8px] top-0 w-[8px] h-[13px] overflow-hidden">
+                          <div className="absolute top-0 right-0 w-[12px] h-[12px] bg-[#005c4b] transform rotate-[35deg] origin-top-left"></div>
+                        </div>
+                      )}
+                      {isFirstInGroup && !isSent && (
+                        <div className="absolute -left-[8px] top-0 w-[8px] h-[13px] overflow-hidden">
+                          <div className="absolute top-0 left-0 w-[12px] h-[12px] bg-[#1f2c34] transform -rotate-[35deg] origin-top-right"></div>
+                        </div>
+                      )}
+
+                      {/* Message content */}
                       <div className="break-words">
-                        <span>{message.content}</span>
-                        <span className="inline-flex ml-2 text-xs text-gray-400 items-center align-bottom">
-                          {formatMessageTime(message.timestamp)}
-                          {isSent && <span className="ml-1">{getStatusIcon(message.status)}</span>}
+                        <span className={`text-[13.5px] leading-[19px] ${
+                          isSent ? 'text-[#e9edef]' : 'text-[#e9edef]'
+                        }`}>
+                          {message.content}
+                        </span>
+                        <span className="inline-flex items-end ml-1 float-right mt-[3px] pl-1 gap-[3px]">
+                          <span className={`text-[11px] leading-none ${
+                            isSent ? 'text-[#ffffff80]' : 'text-[#667781]'
+                          }`}>
+                            {formatMessageTime(message.timestamp)}
+                          </span>
+                          {isSent && (
+                            <span className="text-[13px] leading-none mb-[-1px]">
+                              {getStatusIcon(message.status)}
+                            </span>
+                          )}
                         </span>
                       </div>
                     </div>
-                  </motion.div>
+                  </div>
                 );
               })}
             </div>
@@ -327,28 +275,42 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Message input */}
-      <div className="p-3 bg-[#1f2c34] flex items-center">
-        <div className="flex-1 flex items-center bg-[#2a3942] rounded-full px-2">
-          <motion.button 
-            className="p-2 text-gray-400 hover:text-gray-200"
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
+      {/* ─── Emoji Picker ─── */}
+      {showEmoji && (
+        <motion.div 
+          className="bg-[#1f2c34] border-t border-[#2a3942] p-2 grid grid-cols-9 gap-1 max-h-40 overflow-y-auto"
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "10rem" }}
+        >
+          {["😊","😂","🤣","❤️","👍","🔥","🎉","😍","😘","🥰","😁","👋","🤔","🙏","👏","🎂","🌹","💯","😎","🤝","💪","🙌","😢","🤗","😇","🥺","😤","🤩"].map(emoji => (
+            <button
+              key={emoji}
+              className="text-xl hover:bg-[#2a3942] rounded-lg p-1.5 transition-colors"
+              onClick={() => setNewMessage(current => current + emoji)}
+            >
+              {emoji}
+            </button>
+          ))}
+        </motion.div>
+      )}
+
+      {/* ─── Message Input ─── */}
+      <div className="px-3 py-2 bg-[#1f2c34] flex items-center gap-2 border-t border-[#2a3942]">
+        <div className="flex-1 flex items-center bg-[#2a3942] rounded-lg px-2 min-h-[42px]">
+          <button 
+            className="p-1.5 text-[#8696a0] hover:text-[#e9edef] transition-colors rounded-full"
             onClick={() => setShowEmoji(!showEmoji)}
           >
-            <span className="text-xl">😊</span>
-          </motion.button>
+            <span className="text-lg">😊</span>
+          </button>
           
-          <motion.button 
-            className="mr-2 p-2 text-gray-400 hover:text-gray-200"
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={handleAttachmentClick}
+          <button 
+            className="p-1.5 text-[#8696a0] hover:text-[#e9edef] transition-colors rounded-full"
+            onClick={handleFileInputClick}
           >
-            <Paperclip size={20} />
-          </motion.button>
+            <Paperclip size={18} />
+          </button>
           
-          {/* Hidden file input */}
           <input 
             type="file"
             ref={fileInputRef}
@@ -362,127 +324,28 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               type="text"
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              placeholder="Type a message..."
-              className="flex-1 py-2 px-2 bg-transparent text-gray-100 focus:outline-none placeholder-gray-400"
+              placeholder="Type a message"
+              className="flex-1 py-2 px-3 bg-transparent text-[#e9edef] text-[14px] focus:outline-none placeholder:text-[#8696a0]"
             />
           </form>
           
-          <motion.button
-            type="button"
-            className="p-2 text-gray-400 hover:text-gray-200"
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-          >
-            <Mic size={20} />
-          </motion.button>
+          <button className="p-1.5 text-[#8696a0] hover:text-[#e9edef] transition-colors rounded-full">
+            <Mic size={18} />
+          </button>
         </div>
         
         <motion.button
           onClick={handleSubmit}
-          className="ml-2 bg-gradient-to-r from-emerald-600 to-teal-700 text-white p-3 rounded-full shadow-md disabled:opacity-50"
-          disabled={!newMessage.trim()}
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          initial={false}
-          animate={
+          className={`p-2.5 rounded-full transition-colors ${
             newMessage.trim() 
-              ? { rotate: 0, backgroundColor: "#00a884" } 
-              : { rotate: 90, backgroundColor: "#00a884" }
-          }
-          transition={{ duration: 0.2 }}
+              ? 'bg-[#00A884] hover:bg-[#06cf9c] text-white' 
+              : 'bg-[#2a3942] text-[#8696a0]'
+          }`}
+          whileTap={{ scale: 0.9 }}
         >
-          {newMessage.trim() ? <Send size={20} /> : <Mic size={20} />}
+          {newMessage.trim() ? <Send size={18} /> : <Mic size={18} />}
         </motion.button>
       </div>
-      
-      {/* Emoji picker (simplified) */}
-      {showEmoji && (
-        <motion.div 
-          className="bg-[#1f2c34] border-t border-gray-800 p-2 grid grid-cols-8 gap-2 h-40 overflow-y-auto"
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: "10rem" }}
-        >
-          {["😊","😂","🤣","❤️","👍","🔥","🎉","😍","😘","🥰","😁","👋","🤔","🙏","👏","🎂","🌹","💯"].map(emoji => (
-            <motion.button
-              key={emoji}
-              className="text-2xl hover:bg-gray-700 rounded p-1"
-              whileHover={{ scale: 1.2 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={() => setNewMessage(current => current + emoji)}
-            >
-              {emoji}
-            </motion.button>
-          ))}
-        </motion.div>
-      )}
-      
-      {/* Attachment options */}
-      {showAttachments && (
-        <motion.div 
-          className="bg-[#1f2c34] border-t border-gray-800 p-4"
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: "auto" }}
-        >
-          <div className="grid grid-cols-4 gap-4">
-            <motion.button
-              className="flex flex-col items-center justify-center p-3 bg-[#2a3942] rounded-lg"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleFileInputClick}
-            >
-              <div className="bg-purple-600 p-3 rounded-full mb-2">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-              <span className="text-xs text-gray-300">Document</span>
-            </motion.button>
-            
-            <motion.button
-              className="flex flex-col items-center justify-center p-3 bg-[#2a3942] rounded-lg"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleFileInputClick}
-            >
-              <div className="bg-red-600 p-3 rounded-full mb-2">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              </div>
-              <span className="text-xs text-gray-300">Camera</span>
-            </motion.button>
-            
-            <motion.button
-              className="flex flex-col items-center justify-center p-3 bg-[#2a3942] rounded-lg"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleFileInputClick}
-            >
-              <div className="bg-blue-600 p-3 rounded-full mb-2">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <span className="text-xs text-gray-300">Gallery</span>
-            </motion.button>
-            
-            <motion.button
-              className="flex flex-col items-center justify-center p-3 bg-[#2a3942] rounded-lg"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleFileInputClick}
-            >
-              <div className="bg-yellow-600 p-3 rounded-full mb-2">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15.536a5 5 0 001.414 1.414m0 0l-2.828 2.828m2.828-2.828a9 9 0 010-12.728m0 0l2.828 2.828m-2.828-2.828L5.586 8.464m0 0a5 5 0 01-1.414 1.414" />
-                </svg>
-              </div>
-              <span className="text-xs text-gray-300">Audio</span>
-            </motion.button>
-          </div>
-        </motion.div>
-      )}
     </div>
   );
 };

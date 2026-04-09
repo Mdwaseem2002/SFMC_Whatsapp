@@ -11,7 +11,7 @@ export function useRealtimeMessages(selectedContact: Contact | null) {
     const fetchMessages = async () => {
       try {
         const normalizedPhone = selectedContact.phoneNumber.replace(/^\+/, '');
-        const response = await fetch(`/api/messages?phoneNumber=${normalizedPhone}`);
+        const response = await fetch(`/api/messages?phoneNumber=${normalizedPhone}&limit=500`);
         const data = await response.json();
         
         if (data.messages && Array.isArray(data.messages)) {
