@@ -12,12 +12,12 @@ export async function POST(request: Request) {
       );
     }
 
-    // Format the phone number if needed (remove any spaces, make sure it has the country code)
-    const formattedPhone = to.startsWith('+') ? to : `+${to}`;
+    // Format the phone number to remove '+' if present, as WhatsApp API expects it without '+'
+    const formattedPhone = to.replace('+', '');
 
     // Send message to WhatsApp Business API
     const response = await fetch(
-      `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`,
+      `https://graph.facebook.com/v22.0/${phoneNumberId}/messages`,
       {
         method: 'POST',
         headers: {
