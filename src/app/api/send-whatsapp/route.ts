@@ -31,10 +31,18 @@ export async function POST(request: Request) {
     }
 
     // ----- Parse & Validate Payload -----
-    const body: SendWhatsAppPayload = await request.json();
-    const { phone, templateName, language, parameters } = body;
+    const body = await request.json();
+    
+    // SFMC Journey Builder sends data nested in an `inArguments` array
+    const inArgs = body.inArguments && body.inArguments.length > 0 ? body.inArguments[0] : {};
+    
+    const phone = inArgs.phone || body.phone;
+    const templateName = inArgs.templateName || body.templateName;
+    const language = inArgs.language || body.language;
+    const parameters = inArgs.parameters || body.parameters;
 
     if (!phone || !templateName) {
+      console.error('[send-whatsapp] Missing phone/templateName:', JSON.stringify(body));
       return NextResponse.json(
         { error: 'Missing required fields: phone and templateName are required' },
         { status: 400 }
