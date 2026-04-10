@@ -35,7 +35,7 @@ export default function Home() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [messages, setMessages] = useState<Record<string, Message[]>>({});
-  const realtimeMessages = useRealtimeMessages(selectedContact);
+  const { messages: realtimeMessages, phoneNumber: realtimeMessagesPhone } = useRealtimeMessages(selectedContact);
   const [isConfigured, setIsConfigured] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [config, setConfig] = useState({
@@ -67,12 +67,18 @@ export default function Home() {
   useEffect(() => {
     if (selectedContact && realtimeMessages.length > 0) {
       const key = normalizePhone(selectedContact.phoneNumber);
+      
+      // Prevent stale messages from another contact overwriting the new contact's key
+      if (realtimeMessagesPhone && realtimeMessagesPhone !== key) {
+        return; 
+      }
+      
       setMessages(prev => ({
         ...prev,
         [key]: realtimeMessages
       }));
     }
-  }, [realtimeMessages, selectedContact]);
+  }, [realtimeMessages, realtimeMessagesPhone, selectedContact]);
 
   // Save contacts to localStorage whenever they change
   useEffect(() => {
