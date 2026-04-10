@@ -33,13 +33,22 @@ export async function POST(request: Request) {
     // ----- Parse & Validate Payload -----
     const body = await request.json();
     
-    // SFMC Journey Builder sends data nested in an `inArguments` array
-    const inArgs = body.inArguments && body.inArguments.length > 0 ? body.inArguments[0] : {};
+    // SFMC Journey Builder sends `inArguments` as an array of objects based on config.json
+    // e.g. [{ "contactKey": "Test_User_01" }, { "phone": "9199..." }, ...]
+    // We need to merge them all into a single object.
+    const inArgs = Array.isArray(body.inArguments)
+      ? body.inArguments.reduce((acc: any, curr: any) => ({ ...acc, ...curr }), {})
+      : {};
     
     const phone = inArgs.phone || body.phone;
     const templateName = inArgs.templateName || body.templateName;
     const language = inArgs.language || body.language;
-    const parameters = inArgs.parameters || body.parameters;
+    let parameters = inArgs.parameters || body.parameters || [];
+
+    // Sometimes parameters come as a comma-separated string from the UI instead of an array
+    if (typeof parameters === 'string') {
+      parameters = parameters.split(',').map(p => p.trim()).filter(Boolean);
+    }
 
     if (!phone || !templateName) {
       console.error('[send-whatsapp] Missing phone/templateName:', JSON.stringify(body));
