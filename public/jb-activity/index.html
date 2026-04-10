@@ -228,6 +228,7 @@
     var parametersField = document.getElementById('parameters');
     var saveBtn = document.getElementById('saveBtn');
     var statusBar = document.getElementById('statusBar');
+    var eventDefinitionKey = '';
 
     // Called when JB loads the activity
     connection.on('initActivity', function(payload) {
@@ -238,7 +239,18 @@
         var args = payload.arguments.execute.inArguments;
         for (var i = 0; i < args.length; i++) {
           if (args[i].templateName) templateSelect.value = args[i].templateName;
-          if (args[i].phone) phoneField.value = args[i].phone;
+          
+          // Try to extract the raw column name from the binding string if we built one previously
+          if (args[i].phone) {
+             var phoneVal = args[i].phone;
+             var match = phoneVal.match(/^{{Event\.[^.]+\."([^"]+)"}}$/);
+             if (match) {
+                 phoneField.value = match[1];
+             } else {
+                 phoneField.value = phoneVal;
+             }
+          }
+          
           if (args[i].language) languageField.value = args[i].language;
           if (args[i].parameters && Array.isArray(args[i].parameters)) {
             parametersField.value = args[i].parameters.join(', ');
@@ -247,6 +259,12 @@
       }
 
       connection.trigger('updateButton', { button: 'done', text: 'Done', visible: true, enabled: false });
+    });
+
+    connection.on('requestedInteraction', function(settings) {
+      if (settings.triggers && settings.triggers.length > 0) {
+        eventDefinitionKey = settings.triggers[0].metaData.eventDefinitionKey;
+      }
     });
 
     connection.on('requestedTokens', function(tokens) {
@@ -308,12 +326,25 @@
         .map(function(p) { return p.trim(); })
         .filter(function(p) { return p.length > 0; });
 
+      // Build the correct Journey Data binding string.
+      // If the user already typed a mustache tag like {{...}}, use it directly.
+      // Otherwise, wrap their column name in the Journey Data syntax using the EventDefinitionKey.
+      var phoneValueStr = phoneField.value.trim();
+      if (!phoneValueStr.startsWith('{{')) {
+         if (eventDefinitionKey) {
+            phoneValueStr = '{{Event.' + eventDefinitionKey + '."' + phoneValueStr + '"}}';
+         } else {
+            // Fallback to Contact attribute syntax if Event key is missing
+            phoneValueStr = '{{Contact.Attribute.WhatsApp_Test_Audience."' + phoneValueStr + '"}}';
+         }
+      }
+
       // Update inArguments
       activityPayload.arguments = activityPayload.arguments || {};
       activityPayload.arguments.execute = activityPayload.arguments.execute || {};
       activityPayload.arguments.execute.inArguments = [
         { "contactKey": "{{Contact.Key}}" },
-        { "phone": phoneField.value },
+        { "phone": phoneValueStr },
         { "templateName": selectedTemplate },
         { "language": languageField.value || "en" },
         { "parameters": paramArray },
@@ -347,6 +378,7 @@
     // Initialize
     connection.trigger('ready');
     connection.trigger('requestTokens');
+    connection.trigger('requestInteraction');
     fetchTemplates();
   </script>
 </body>
