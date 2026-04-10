@@ -81,7 +81,7 @@ export async function POST(request: Request) {
     if (parameters && parameters.length > 0) {
       templateComponents.push({
         type: 'body',
-        parameters: parameters.map((param) => ({
+        parameters: parameters.map((param: string) => ({
           type: 'text',
           text: param,
         })),
