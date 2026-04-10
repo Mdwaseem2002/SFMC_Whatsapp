@@ -315,10 +315,10 @@ async function writeSfmcDeliveryStatus(payload: DeliveryStatusPayload): Promise<
   const sfmcPayload = [
     {
       keys: {
-        WaMid: payload.wamid,
+        // According to the DE definition, ContactKey is the primary key
+        ContactKey: payload.recipientId,
       },
       values: {
-        ContactKey: payload.recipientId,
         Phone: payload.recipientId,
         WaMid: payload.wamid,
         Status: payload.status,
