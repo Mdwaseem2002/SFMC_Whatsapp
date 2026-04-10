@@ -1,0 +1,55 @@
+{
+  "workflowApiVersion": "1.1",
+  "metaData": {
+    "icon": "https://sfmc-whatsapp-iota.vercel.app/icon.png",
+    "category": "message"
+  },
+  "type": "REST",
+  "lang": {
+    "en-US": {
+      "name": "Send WhatsApp",
+      "description": "Send WhatsApp template via Pentacloud BSP"
+    }
+  },
+  "arguments": {
+    "execute": {
+      "inArguments": [
+        { "contactKey": "{{Contact.Key}}" },
+        { "phone": "{{Attribute.MobilePhone}}" },
+        { "templateName": "" },
+        { "language": "en" },
+        { "parameters": [] },
+        { "journeyName": "{{Journey.Name}}" }
+      ],
+      "url": "https://sfmc-whatsapp-iota.vercel.app/api/send-whatsapp",
+      "verb": "POST",
+      "body": "",
+      "header": "",
+      "format": "json",
+      "useJwt": true,
+      "timeout": 10000
+    }
+  },
+  "configurationArguments": {
+    "save": {
+      "url": "https://sfmc-whatsapp-iota.vercel.app/api/jb/save",
+      "verb": "POST"
+    },
+    "publish": {
+      "url": "https://sfmc-whatsapp-iota.vercel.app/api/jb/publish",
+      "verb": "POST"
+    },
+    "validate": {
+      "url": "https://sfmc-whatsapp-iota.vercel.app/api/jb/validate",
+      "verb": "POST"
+    }
+  },
+  "userInterfaces": {
+    "configModal": {
+      "url": "https://sfmc-whatsapp-iota.vercel.app/jb-activity/index.html",
+      "height": 400,
+      "width": 600,
+      "fullscreen": false
+    }
+  }
+}

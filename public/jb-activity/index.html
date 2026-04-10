@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WhatsApp Activity Configuration</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0b141a;
+      color: #e9edef;
+      padding: 24px;
+      min-height: 100vh;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #2a3942;
+    }
+
+    .header-icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, #00A884, #075E54);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .header h1 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #e9edef;
+    }
+
+    .header p {
+      font-size: 11px;
+      color: #8696a0;
+      margin-top: 2px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #8696a0;
+      margin-bottom: 6px;
+    }
+
+    label .required {
+      color: #ef4444;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 10px 12px;
+      background: #1f2c34;
+      border: 1px solid #2a3942;
+      border-radius: 10px;
+      color: #e9edef;
+      font-size: 13px;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: #00A884;
+      box-shadow: 0 0 0 2px rgba(0, 168, 132, 0.15);
+    }
+
+    input::placeholder, textarea::placeholder {
+      color: #667781;
+    }
+
+    select {
+      appearance: none;
+      cursor: pointer;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238696a0' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 32px;
+    }
+
+    select option {
+      background: #1f2c34;
+      color: #e9edef;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+
+    .hint {
+      font-size: 10px;
+      color: #667781;
+      margin-top: 4px;
+    }
+
+    .row {
+      display: flex;
+      gap: 12px;
+    }
+
+    .row .form-group {
+      flex: 1;
+    }
+
+    .btn-save {
+      width: 100%;
+      padding: 12px;
+      background: #00A884;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-save:hover {
+      background: #06cf9c;
+    }
+
+    .btn-save:disabled {
+      background: #2a3942;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    .status-bar {
+      margin-top: 12px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      display: none;
+    }
+
+    .status-bar.success {
+      display: block;
+      background: rgba(0, 168, 132, 0.15);
+      color: #00A884;
+      border: 1px solid rgba(0, 168, 132, 0.3);
+    }
+
+    .status-bar.error {
+      display: block;
+      background: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="header-icon">💬</div>
+    <div>
+      <h1>Send WhatsApp Message</h1>
+      <p>Pentacloud BSP &middot; Journey Builder Activity</p>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label>Template Name <span class="required">*</span></label>
+    <select id="templateName">
+      <option value="">-- Select a template --</option>
+    </select>
+    <p class="hint">Templates are fetched from your WhatsApp Business Account</p>
+  </div>
+
+  <div class="row">
+    <div class="form-group">
+      <label>Phone Field Mapping</label>
+      <input type="text" id="phoneField" value="{{Attribute.MobilePhone}}" />
+      <p class="hint">Data Extension field for phone number</p>
+    </div>
+    <div class="form-group">
+      <label>Language</label>
+      <input type="text" id="language" value="en" placeholder="en" />
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label>Parameters</label>
+    <textarea id="parameters" placeholder="John, Order123, 2026-04-10"></textarea>
+    <p class="hint">Comma-separated values to replace {{1}}, {{2}}, etc. in the template body</p>
+  </div>
+
+  <button class="btn-save" id="saveBtn" onclick="save()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>
+    Save Configuration
+  </button>
+
+  <div id="statusBar" class="status-bar"></div>
+
+  <!-- Postmonger for JB SDK communication -->
+  <script src="https://cdn.jsdelivr.net/npm/postmonger@1.0.6/postmonger.js"></script>
+  <script>
+    'use strict';
+
+    var connection = new Postmonger.Session();
+    var activityPayload = {};
+    var templateSelect = document.getElementById('templateName');
+    var phoneField = document.getElementById('phoneField');
+    var languageField = document.getElementById('language');
+    var parametersField = document.getElementById('parameters');
+    var saveBtn = document.getElementById('saveBtn');
+    var statusBar = document.getElementById('statusBar');
+
+    // Called when JB loads the activity
+    connection.on('initActivity', function(payload) {
+      activityPayload = payload;
+
+      // Restore saved values if editing an existing activity
+      if (payload && payload.arguments && payload.arguments.execute && payload.arguments.execute.inArguments) {
+        var args = payload.arguments.execute.inArguments;
+        for (var i = 0; i < args.length; i++) {
+          if (args[i].templateName) templateSelect.value = args[i].templateName;
+          if (args[i].phone) phoneField.value = args[i].phone;
+          if (args[i].language) languageField.value = args[i].language;
+          if (args[i].parameters && Array.isArray(args[i].parameters)) {
+            parametersField.value = args[i].parameters.join(', ');
+          }
+        }
+      }
+
+      connection.trigger('updateButton', { button: 'done', text: 'Done', visible: true, enabled: false });
+    });
+
+    connection.on('requestedTokens', function(tokens) {
+      // Tokens received from JB — we could use these if needed
+    });
+
+    connection.on('clickedNext', function() {
+      save();
+    });
+
+    connection.on('gotoStep', function(step) {
+      // Handle step navigation if multi-step
+    });
+
+    // Fetch templates from the API
+    function fetchTemplates() {
+      fetch('/api/templates')
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          if (data.success && Array.isArray(data.templates)) {
+            data.templates.forEach(function(t) {
+              var opt = document.createElement('option');
+              opt.value = t.name;
+              opt.textContent = t.name + ' (' + t.language + ' · ' + t.category + ')';
+              templateSelect.appendChild(opt);
+            });
+
+            // Re-select saved value if any
+            if (activityPayload.arguments && activityPayload.arguments.execute) {
+              var args = activityPayload.arguments.execute.inArguments;
+              for (var i = 0; i < args.length; i++) {
+                if (args[i].templateName) {
+                  templateSelect.value = args[i].templateName;
+                  break;
+                }
+              }
+            }
+          }
+        })
+        .catch(function(err) {
+          console.error('Failed to fetch templates:', err);
+          var opt = document.createElement('option');
+          opt.value = '';
+          opt.textContent = '⚠ Failed to load templates';
+          templateSelect.appendChild(opt);
+        });
+    }
+
+    // Save the activity configuration
+    function save() {
+      var selectedTemplate = templateSelect.value;
+      if (!selectedTemplate) {
+        showStatus('Please select a template', 'error');
+        return;
+      }
+
+      var paramArray = parametersField.value
+        .split(',')
+        .map(function(p) { return p.trim(); })
+        .filter(function(p) { return p.length > 0; });
+
+      // Update inArguments
+      activityPayload.arguments = activityPayload.arguments || {};
+      activityPayload.arguments.execute = activityPayload.arguments.execute || {};
+      activityPayload.arguments.execute.inArguments = [
+        { "contactKey": "{{Contact.Key}}" },
+        { "phone": phoneField.value },
+        { "templateName": selectedTemplate },
+        { "language": languageField.value || "en" },
+        { "parameters": paramArray },
+        { "journeyName": "{{Journey.Name}}" }
+      ];
+
+      // Update activity name
+      activityPayload.metaData = activityPayload.metaData || {};
+      activityPayload.metaData.isConfigured = true;
+
+      // Tell JB to save
+      connection.trigger('updateActivity', activityPayload);
+      connection.trigger('updateButton', { button: 'done', text: 'Done', visible: true, enabled: true });
+
+      showStatus('Configuration saved! Template: ' + selectedTemplate, 'success');
+    }
+
+    function showStatus(msg, type) {
+      statusBar.textContent = msg;
+      statusBar.className = 'status-bar ' + type;
+    }
+
+    // Enable/disable save based on template selection
+    templateSelect.addEventListener('change', function() {
+      saveBtn.disabled = !templateSelect.value;
+      if (templateSelect.value) {
+        connection.trigger('updateButton', { button: 'done', text: 'Done', visible: true, enabled: true });
+      }
+    });
+
+    // Initialize
+    connection.trigger('ready');
+    connection.trigger('requestTokens');
+    fetchTemplates();
+  </script>
+</body>
+</html>
