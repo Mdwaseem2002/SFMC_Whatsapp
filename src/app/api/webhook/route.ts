@@ -180,7 +180,8 @@ export async function POST(request: Request) {
 
             if (!wamid) continue;
 
-            console.log(`[webhook] Status update: wamid=${wamid}, status=${statusValue}, recipient=${recipientId}`);
+            const errors = status.errors ? JSON.stringify(status.errors) : '';
+            console.log(`[webhook] Status update: wamid=${wamid}, status=${statusValue}, recipient=${recipientId} ${errors ? `| errors=${errors}` : ''}`);
 
             // ----- Idempotency Check -----
             // Build a composite key: wamid + status (same wamid can have multiple statuses: sent → delivered → read)
