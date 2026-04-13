@@ -187,17 +187,14 @@ export async function POST(request: Request) {
 
     console.log(`[send-whatsapp] Message sent successfully. wamid: ${wamid}`);
 
+    const normalizedPhone = formattedPhone.replace(/^\+/, '');
+    const paramText = Array.isArray(parameters) && parameters.length > 0 ? ` [Params: ${parameters.join(', ')}]` : '';
+    const bodyContent = `[Template: ${templateName}]${paramText}`;
+
     // ----- Save to MongoDB & Emit SSE -----
     if (wamid) {
       try {
         await connectMongoDB();
-        
-        // Strip plus for normalized storage
-        const normalizedPhone = formattedPhone.replace(/^\+/, '');
-
-        // Determine content for the message (e.g. from template components)
-        const paramText = Array.isArray(parameters) && parameters.length > 0 ? ` [Params: ${parameters.join(', ')}]` : '';
-        const bodyContent = `[Template: ${templateName}]${paramText}`;
 
         const messageData = {
           id: wamid,
