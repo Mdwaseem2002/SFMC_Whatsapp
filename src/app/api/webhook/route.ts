@@ -5,7 +5,7 @@
 
 import { NextResponse } from 'next/server';
 import connectMongoDB from '@/lib/mongodb';
-import { getSfmcAccessToken } from '@/lib/sfmcAuth';
+import { writeReceivedMessage, updateSentMessageStatus } from '@/lib/sfmcDE';
 import MessageModel from '@/models/Message';
 import { MessageStatus } from '@/types';
 
@@ -162,6 +162,33 @@ export async function POST(request: Request) {
                     })
                   }).catch(err => console.error('[webhook] SSE emit failed:', err));
                 }
+
+                // --- Write to SFMC WhatsApp_Received_Messages DE ---
+                try {
+                  // Extract contact name from webhook payload if available
+                  const contacts = value.contacts as Array<Record<string, unknown>> | undefined;
+                  let contactName = '';
+                  if (contacts && contacts.length > 0) {
+                    const profile = (contacts[0] as Record<string, unknown>).profile as Record<string, string> | undefined;
+                    contactName = profile?.name || '';
+                  }
+
+                  const textObj = message.text as Record<string, string>;
+                  const msgTimestamp = message.timestamp
+                    ? new Date(Number(message.timestamp) * 1000).toISOString()
+                    : new Date().toISOString();
+
+                  await writeReceivedMessage({
+                    WaMid: message.id as string,
+                    Phone: message.from as string,
+                    ContactName: contactName,
+                    MessageType: message.type as string || 'text',
+                    MessageContent: textObj?.body || '',
+                    ReceivedTime: msgTimestamp,
+                  });
+                } catch (sfmcError) {
+                  console.error('[webhook] SFMC Received DE write failed:', sfmcError);
+                }
               } catch (storeError) {
                 console.error("[webhook] Error storing message:", storeError);
               }
@@ -191,17 +218,32 @@ export async function POST(request: Request) {
               continue;
             }
 
-            // ----- Write to SFMC Data Extension -----
+            // ----- Write status update to SFMC WhatsApp_Sent_Messages DE -----
             try {
-              await writeSfmcDeliveryStatus({
-                wamid,
-                status: statusValue,
-                recipientId,
-                timestamp,
-              });
+              const isoTimestamp = timestamp
+                ? new Date(Number(timestamp) * 1000).toISOString()
+                : new Date().toISOString();
+
+              const statusRow: {
+                WaMid: string;
+                Status: string;
+                DeliveredTime?: string;
+                ReadTime?: string;
+                FailedReason?: string;
+              } = {
+                WaMid: wamid,
+                Status: statusValue,
+              };
+
+              if (statusValue === 'delivered') statusRow.DeliveredTime = isoTimestamp;
+              if (statusValue === 'read') statusRow.ReadTime = isoTimestamp;
+              if (statusValue === 'failed') {
+                statusRow.FailedReason = errors || 'Unknown error';
+              }
+
+              await updateSentMessageStatus(statusRow);
             } catch (sfmcError) {
-              console.error(`[webhook] SFMC write failed for ${wamid}:`, sfmcError);
-              // Don't throw — we already acknowledged Meta
+              console.error(`[webhook] SFMC Sent DE status update failed for ${wamid}:`, sfmcError);
             }
 
             // ----- Update Message Status in MongoDB -----
@@ -270,82 +312,4 @@ export async function POST(request: Request) {
       'Access-Control-Allow-Origin': '*',
     },
   });
-}
-
-// ----- SFMC Data Extension Writer -----
-
-interface DeliveryStatusPayload {
-  wamid: string;
-  status: string;
-  recipientId: string;
-  timestamp: string;
-}
-
-async function writeSfmcDeliveryStatus(payload: DeliveryStatusPayload): Promise<void> {
-  const sfmcRestBaseUri = process.env.SFMC_REST_BASE_URI;
-
-  if (!sfmcRestBaseUri) {
-    console.warn('[webhook] SFMC_REST_BASE_URI not configured — skipping SFMC write');
-    return;
-  }
-
-  // Get cached SFMC access token
-  const { access_token } = await getSfmcAccessToken();
-
-  // Convert Unix timestamp to ISO string
-  const isoTimestamp = payload.timestamp 
-    ? new Date(Number(payload.timestamp) * 1000).toISOString()
-    : new Date().toISOString();
-
-  // Map status to the correct timestamp column
-  const timestampFields: Record<string, string> = {};
-  switch (payload.status) {
-    case 'sent':
-      timestampFields.SentTime = isoTimestamp;
-      break;
-    case 'delivered':
-      timestampFields.DeliveredTime = isoTimestamp;
-      break;
-    case 'read':
-      timestampFields.ReadTime = isoTimestamp;
-      break;
-    // 'failed' status doesn't have a specific timestamp column
-  }
-
-  // Build SFMC Data Extension row payload
-  const sfmcPayload = [
-    {
-      keys: {
-        // According to the DE definition, ContactKey is the primary key
-        ContactKey: payload.recipientId,
-      },
-      values: {
-        Phone: payload.recipientId,
-        WaMid: payload.wamid,
-        Status: payload.status,
-        ...timestampFields,
-      },
-    },
-  ];
-
-  console.log(`[webhook] Writing to SFMC DE: wamid=${payload.wamid}, status=${payload.status}`);
-
-  const sfmcResponse = await fetch(
-    `${sfmcRestBaseUri}/data/v1/async/dataextensions/key:WhatsApp_Message_Log/rows`,
-    {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${access_token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ items: sfmcPayload }),
-    }
-  );
-
-  if (!sfmcResponse.ok) {
-    const errorText = await sfmcResponse.text();
-    throw new Error(`SFMC API error (${sfmcResponse.status}): ${errorText}`);
-  }
-
-  console.log(`[webhook] SFMC write successful for wamid=${payload.wamid}`);
 }

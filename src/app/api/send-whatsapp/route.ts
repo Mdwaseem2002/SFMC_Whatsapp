@@ -4,6 +4,7 @@
 
 import { NextResponse } from 'next/server';
 import connectMongoDB from '@/lib/mongodb';
+import { writeSentMessage } from '@/lib/sfmcDE';
 import MessageModel from '@/models/Message';
 import ConversationModel from '@/models/Conversation';
 import { MessageStatus } from '@/types';
@@ -245,6 +246,32 @@ export async function POST(request: Request) {
 
       } catch (dbError) {
         console.error('[send-whatsapp] Error saving to MongoDB:', dbError);
+      }
+
+      // ----- Write to SFMC Data Extension -----
+      try {
+        const contactKey = (inArgs.contactKey || '') as string;
+        const journeyName = (inArgs.journeyName || '') as string;
+        const paramString = Array.isArray(parameters) && parameters.length > 0
+          ? parameters.join(', ')
+          : '';
+
+        await writeSentMessage({
+          WaMid: wamid,
+          ContactKey: contactKey,
+          Phone: formattedPhone,
+          TemplateName: templateName,
+          Language: language || 'en',
+          Parameters: paramString,
+          MessageContent: bodyContent,
+          Status: 'sent',
+          SentTime: new Date().toISOString(),
+          JourneyName: journeyName,
+          Source: contactKey ? 'journey_builder' : 'manual_send',
+        });
+      } catch (sfmcError) {
+        console.error('[send-whatsapp] SFMC DE write failed:', sfmcError);
+        // Don't fail the request — message was already sent successfully
       }
     }
 
