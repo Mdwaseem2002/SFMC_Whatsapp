@@ -15,6 +15,56 @@ interface SendWhatsAppPayload {
   parameters?: string[];
 }
 
+/**
+ * Decode a Base64URL-encoded string (used in JWTs).
+ * Converts base64url chars (+/-/_) to standard base64, then decodes.
+ */
+function decodeBase64Url(str: string): string {
+  // Replace base64url-specific chars with standard base64 chars
+  let base64 = str.replace(/-/g, '+').replace(/_/g, '/');
+  // Pad with '=' to make length a multiple of 4
+  while (base64.length % 4 !== 0) {
+    base64 += '=';
+  }
+  // Decode: in Node.js / Edge runtime, use Buffer or atob
+  if (typeof Buffer !== 'undefined') {
+    return Buffer.from(base64, 'base64').toString('utf-8');
+  }
+  return atob(base64);
+}
+
+/**
+ * Parse the request body which may be:
+ *   1. A raw JWT string (when SFMC sends with useJwt: true) – decode the payload segment
+ *   2. A normal JSON object
+ */
+async function parseRequestBody(request: Request): Promise<Record<string, unknown>> {
+  const rawBody = await request.text();
+
+  // Check if the body looks like a JWT (three dot-separated base64url segments)
+  const jwtParts = rawBody.split('.');
+  if (jwtParts.length === 3 && rawBody.startsWith('eyJ')) {
+    console.log('[send-whatsapp] Detected JWT-encoded body – decoding payload segment');
+    try {
+      const payloadJson = decodeBase64Url(jwtParts[1]);
+      const payload = JSON.parse(payloadJson);
+      console.log('[send-whatsapp] JWT payload decoded successfully');
+      return payload as Record<string, unknown>;
+    } catch (decodeErr) {
+      console.error('[send-whatsapp] Failed to decode JWT payload:', decodeErr);
+      throw new Error('Invalid JWT payload – could not decode');
+    }
+  }
+
+  // Otherwise treat as regular JSON
+  try {
+    return JSON.parse(rawBody) as Record<string, unknown>;
+  } catch (jsonErr) {
+    console.error('[send-whatsapp] Body is neither valid JWT nor valid JSON. First 100 chars:', rawBody.slice(0, 100));
+    throw new Error('Request body is not valid JSON or JWT');
+  }
+}
+
 export async function POST(request: Request) {
   try {
     // ----- Auth Check -----
@@ -31,27 +81,32 @@ export async function POST(request: Request) {
     }
 
     // ----- Parse & Validate Payload -----
-    const body = await request.json();
+    // SFMC with useJwt:true sends the ENTIRE body as a JWT token, not as JSON.
+    // We decode the JWT payload to get the actual inArguments.
+    const body = await parseRequestBody(request);
     
     // SFMC Journey Builder sends `inArguments` as an array of objects based on config.json
     // e.g. [{ "contactKey": "Test_User_01" }, { "phone": "9199..." }, ...]
     // We need to merge them all into a single object.
-    const inArgs = Array.isArray(body.inArguments)
-      ? body.inArguments.reduce((acc: any, curr: any) => ({ ...acc, ...curr }), {})
+    const inArguments = body.inArguments as Array<Record<string, unknown>> | undefined;
+    const inArgs = Array.isArray(inArguments)
+      ? inArguments.reduce((acc: Record<string, unknown>, curr: Record<string, unknown>) => ({ ...acc, ...curr }), {})
       : {};
     
-    const phone = inArgs.phone || body.phone;
-    const templateName = inArgs.templateName || body.templateName;
-    const language = inArgs.language || body.language;
-    let parameters = inArgs.parameters || body.parameters || [];
+    const phone = (inArgs.phone || body.phone) as string | undefined;
+    const templateName = (inArgs.templateName || body.templateName) as string | undefined;
+    const language = (inArgs.language || body.language) as string | undefined;
+    let parameters = (inArgs.parameters || body.parameters || []) as string[] | string;
 
     // Sometimes parameters come as a comma-separated string from the UI instead of an array
     if (typeof parameters === 'string') {
       parameters = parameters.split(',').map(p => p.trim()).filter(Boolean);
     }
 
+    console.log('[send-whatsapp] Parsed payload:', JSON.stringify({ phone, templateName, language, parameters }));
+
     if (!phone || !templateName) {
-      console.error('[send-whatsapp] Missing phone/templateName:', JSON.stringify(body));
+      console.error('[send-whatsapp] Missing phone/templateName. inArgs:', JSON.stringify(inArgs), 'body keys:', Object.keys(body));
       return NextResponse.json(
         { error: 'Missing required fields: phone and templateName are required' },
         { status: 400 }
@@ -78,7 +133,7 @@ export async function POST(request: Request) {
     const templateComponents: Array<Record<string, unknown>> = [];
 
     // Add body parameters if provided
-    if (parameters && parameters.length > 0) {
+    if (Array.isArray(parameters) && parameters.length > 0) {
       templateComponents.push({
         type: 'body',
         parameters: parameters.map((param: string) => ({
@@ -140,7 +195,7 @@ export async function POST(request: Request) {
         const normalizedPhone = formattedPhone.replace(/^\+/, '');
 
         // Determine content for the message (e.g. from template components)
-        const paramText = parameters && parameters.length > 0 ? ` [Params: ${parameters.join(', ')}]` : '';
+        const paramText = Array.isArray(parameters) && parameters.length > 0 ? ` [Params: ${parameters.join(', ')}]` : '';
         const bodyContent = `[Template: ${templateName}]${paramText}`;
 
         const messageData = {
@@ -208,3 +263,4 @@ export async function POST(request: Request) {
     );
   }
 }
+
