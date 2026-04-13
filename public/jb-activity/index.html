@@ -192,9 +192,9 @@
 
   <div class="row">
     <div class="form-group">
-      <label>Phone Field Mapping</label>
-      <input type="text" id="phoneField" value="{{Attribute.MobilePhone}}" />
-      <p class="hint">Data Extension field for phone number</p>
+      <label>Phone Column Name <span class="required">*</span></label>
+      <input type="text" id="phoneField" value="Phone" placeholder="Phone" />
+      <p class="hint">Exact column name from your Data Extension (e.g. Phone, MobilePhone, Mobile)</p>
     </div>
     <div class="form-group">
       <label>Language</label>
@@ -229,9 +229,11 @@
     var saveBtn = document.getElementById('saveBtn');
     var statusBar = document.getElementById('statusBar');
     var eventDefinitionKey = '';
+    var schemaPayload = null;
 
     // Called when JB loads the activity
     connection.on('initActivity', function(payload) {
+      console.log('[WA Activity] initActivity payload:', JSON.stringify(payload));
       activityPayload = payload;
 
       // Restore saved values if editing an existing activity
@@ -243,10 +245,15 @@
           // Try to extract the raw column name from the binding string if we built one previously
           if (args[i].phone) {
              var phoneVal = args[i].phone;
-             var match = phoneVal.match(/^{{Event\.[^.]+\."([^"]+)"}}$/);
+             // Match {{Event.KEY."ColName"}} or {{Event.KEY.ColName}}
+             var match = phoneVal.match(/^\{\{Event\.[^.]+\."?([^"\}]+)"?\}\}$/);
              if (match) {
                  phoneField.value = match[1];
+             } else if (!phoneVal.startsWith('{{')) {
+                 // It's a plain column name, use as-is
+                 phoneField.value = phoneVal;
              } else {
+                 // Some other mustache expression — show as-is
                  phoneField.value = phoneVal;
              }
           }
@@ -262,9 +269,20 @@
     });
 
     connection.on('requestedInteraction', function(settings) {
-      if (settings.triggers && settings.triggers.length > 0) {
-        eventDefinitionKey = settings.triggers[0].metaData.eventDefinitionKey;
+      console.log('[WA Activity] requestedInteraction:', JSON.stringify(settings));
+      try {
+        if (settings && settings.triggers && settings.triggers.length > 0) {
+          eventDefinitionKey = settings.triggers[0].metaData.eventDefinitionKey;
+          console.log('[WA Activity] eventDefinitionKey:', eventDefinitionKey);
+        }
+      } catch(e) {
+        console.error('[WA Activity] Error parsing interaction:', e);
       }
+    });
+
+    connection.on('requestedSchema', function(data) {
+      console.log('[WA Activity] requestedSchema:', JSON.stringify(data));
+      schemaPayload = data;
     });
 
     connection.on('requestedTokens', function(tokens) {
@@ -327,16 +345,44 @@
         .filter(function(p) { return p.length > 0; });
 
       // Build the correct Journey Data binding string.
-      // If the user already typed a mustache tag like {{...}}, use it directly.
-      // Otherwise, wrap their column name in the Journey Data syntax using the EventDefinitionKey.
+      // The user types just a column name (e.g. "Phone").
+      // We MUST wrap it in {{Event.<EventDefinitionKey>."<ColumnName>"}} for SFMC to resolve it.
       var phoneValueStr = phoneField.value.trim();
-      if (!phoneValueStr.startsWith('{{')) {
-         if (eventDefinitionKey) {
-            phoneValueStr = '{{Event.' + eventDefinitionKey + '."' + phoneValueStr + '"}}';
-         } else {
-            // Fallback to Contact attribute syntax if Event key is missing
-            phoneValueStr = '{{Contact.Attribute.WhatsApp_Test_Audience."' + phoneValueStr + '"}}';
-         }
+      
+      // If the user typed a full mustache expression, strip it back to just the column name
+      // so we can re-wrap it correctly with the current eventDefinitionKey
+      var mustacheMatch = phoneValueStr.match(/^\{\{(?:Event\.[^.]+\.|Contact\.Attribute\.[^.]+\.|Attribute\.)"?([^"\}]+)"?\}\}$/);
+      if (mustacheMatch) {
+        phoneValueStr = mustacheMatch[1];
+      }
+
+      // Now build the correct binding
+      if (eventDefinitionKey) {
+        phoneValueStr = '{{Event.' + eventDefinitionKey + '."' + phoneValueStr + '"}}';
+        console.log('[WA Activity] Phone binding (Event):', phoneValueStr);
+      } else {
+        // If no eventDefinitionKey yet, try to extract it from the schema
+        var fallbackKey = '';
+        try {
+          if (schemaPayload && schemaPayload.schema) {
+            for (var i = 0; i < schemaPayload.schema.length; i++) {
+              var key = schemaPayload.schema[i].key;
+              if (key && key.indexOf('Event.') === 0) {
+                fallbackKey = key.split('.')[1];
+                break;
+              }
+            }
+          }
+        } catch(e) { /* ignore */ }
+
+        if (fallbackKey) {
+          phoneValueStr = '{{Event.' + fallbackKey + '."' + phoneValueStr + '"}}';
+          console.log('[WA Activity] Phone binding (Schema fallback):', phoneValueStr);
+        } else {
+          // Last resort: use the raw column name wrapped in Contact.Attribute
+          phoneValueStr = '{{Contact.Attribute.WhatsApp_Test_Audience."' + phoneValueStr + '"}}';
+          console.warn('[WA Activity] No eventDefinitionKey found! Using Contact.Attribute fallback:', phoneValueStr);
+        }
       }
 
       // Update inArguments
@@ -379,6 +425,7 @@
     connection.trigger('ready');
     connection.trigger('requestTokens');
     connection.trigger('requestInteraction');
+    connection.trigger('requestSchema');
     fetchTemplates();
   </script>
 </body>

@@ -16,7 +16,7 @@
     "execute": {
       "inArguments": [
         { "contactKey": "{{Contact.Key}}" },
-        { "phone": "{{Attribute.MobilePhone}}" },
+        { "phone": "" },
         { "templateName": "" },
         { "language": "en" },
         { "parameters": [] },
