@@ -65,18 +65,19 @@ async function upsertDeRow(
 
   const { access_token } = await getSfmcAccessToken();
 
-  const payload = {
-    items: [
-      {
-        keys,
-        values,
-      },
-    ],
-  };
+  // Clean up trailing slash from base URI if it exists
+  const baseUri = sfmcRestBaseUri.replace(/\/$/, '');
+  const url = `${baseUri}/hub/v1/dataevents/key:${deExternalKey}/rowset`;
 
-  const url = `${sfmcRestBaseUri}/data/v1/async/dataextensions/key:${deExternalKey}/rows`;
+  // Payload for the synchronous rowset endpoint is a direct array
+  const payload = [
+    {
+      keys,
+      values,
+    },
+  ];
 
-  console.log(`[SFMC DE] Upserting to ${deExternalKey}: keys=${JSON.stringify(keys)}`);
+  console.log(`[SFMC DE] Upserting to ${deExternalKey} synchronously: keys=${JSON.stringify(keys)}`);
 
   const response = await fetch(url, {
     method: 'POST',
@@ -89,6 +90,7 @@ async function upsertDeRow(
 
   if (!response.ok) {
     const errorText = await response.text();
+    console.error(`[SFMC DE] Upsert failed (${response.status}):`, errorText);
     throw new Error(`SFMC DE upsert failed (${response.status}): ${errorText}`);
   }
 
