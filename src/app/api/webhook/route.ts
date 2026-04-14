@@ -5,8 +5,9 @@
 
 import { NextResponse } from 'next/server';
 import connectMongoDB from '@/lib/mongodb';
-import { writeReceivedMessage, updateSentMessageStatus } from '@/lib/sfmcDE';
+import { writeReceivedMessage, updateSentMessageStatus, writeOptOutStatus } from '@/lib/sfmcDE';
 import MessageModel from '@/models/Message';
+import Conversation from '@/models/Conversation';
 import { MessageStatus } from '@/types';
 
 // ----- Idempotency: Track processed wamids in-memory -----
@@ -186,6 +187,41 @@ export async function POST(request: Request) {
                     MessageContent: textObj?.body || '',
                     ReceivedTime: msgTimestamp,
                   });
+
+                  // ---- Opt-Out Processing (STOP keywords) ----
+                  const bodyText = textObj?.body?.trim().toLowerCase() || '';
+                  if (/^(stop|unsubscribe|cancel|quit|end)$/.test(bodyText)) {
+                    console.log(`[webhook] Opt-Out keyword detected from ${message.from}. Marking as unsubscribed.`);
+                    
+                    // 1. Write to SFMC WhatsApp_OptOuts DE
+                    await writeOptOutStatus(message.from as string, 'OptOut');
+                    
+                    // 2. Update MongoDB Conversation local state
+                    await Conversation.findOneAndUpdate(
+                      { phoneNumber: message.from },
+                      { isOptedOut: true }
+                    );
+
+                    // 3. Send automated WhatsApp confirmation reply
+                    const ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
+                    const PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID;
+                    if (ACCESS_TOKEN && PHONE_NUMBER_ID) {
+                      await fetch(`https://graph.facebook.com/v25.0/${PHONE_NUMBER_ID}/messages`, {
+                        method: 'POST',
+                        headers: {
+                          'Authorization': `Bearer ${ACCESS_TOKEN}`,
+                          'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                          messaging_product: "whatsapp",
+                          to: message.from,
+                          type: "text",
+                          text: { body: "You have been successfully unsubscribed from these messages." }
+                        })
+                      }).catch(e => console.error('[webhook] Failed to send opt-out confirm', e));
+                    }
+                  }
+
                 } catch (sfmcError) {
                   console.error('[webhook] SFMC Received DE write failed:', sfmcError);
                 }

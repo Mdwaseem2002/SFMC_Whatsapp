@@ -21,6 +21,10 @@ const ConversationSchema = new mongoose.Schema({
   unreadCount: {
     type: Number,
     default: 0
+  },
+  isOptedOut: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true

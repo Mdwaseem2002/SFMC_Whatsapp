@@ -166,3 +166,23 @@ export async function updateSentMessageStatus(row: StatusUpdateRow): Promise<voi
 
   await upsertDeRow('WhatsApp_Sent_Messages', keys, values);
 }
+
+/**
+ * Log an opt-out (or opt-in) action based on a keyword reply (e.g., "STOP")
+ * DE: WhatsApp_OptOuts
+ * Keys: Phone
+ * Values: Action, Timestamp
+ */
+export async function writeOptOutStatus(phone: string, action: string) {
+  if (!phone) return;
+  
+  const timestamp = new Date().toISOString();
+  
+  const keys = { Phone: phone };
+  const values = {
+    Action: action,
+    Timestamp: timestamp
+  };
+
+  await upsertDeRow('WhatsApp_OptOuts', keys, values);
+}
