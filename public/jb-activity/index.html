@@ -230,6 +230,7 @@
     var statusBar = document.getElementById('statusBar');
     var eventDefinitionKey = '';
     var schemaPayload = null;
+    var journeyNameStr = '';
 
     // Called when JB loads the activity
     connection.on('initActivity', function(payload) {
@@ -271,6 +272,10 @@
     connection.on('requestedInteraction', function(settings) {
       console.log('[WA Activity] requestedInteraction:', JSON.stringify(settings));
       try {
+        if (settings && settings.name) {
+          journeyNameStr = settings.name;
+        }
+        
         if (settings && settings.triggers && settings.triggers.length > 0) {
           eventDefinitionKey = settings.triggers[0].metaData.eventDefinitionKey;
           console.log('[WA Activity] eventDefinitionKey:', eventDefinitionKey);
@@ -394,7 +399,7 @@
         { "templateName": selectedTemplate },
         { "language": languageField.value || "en" },
         { "parameters": paramArray },
-        { "journeyName": "{{Journey.Name}}" }
+        { "journeyName": journeyNameStr }
       ];
 
       // Update activity name

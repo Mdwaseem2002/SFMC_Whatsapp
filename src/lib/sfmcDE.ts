@@ -21,6 +21,7 @@ interface SentMessageRow {
   FailedReason?: string;
   JourneyName?: string;
   Source?: string;
+  Logs?: string;
 }
 
 interface ReceivedMessageRow {
@@ -39,6 +40,7 @@ interface StatusUpdateRow {
   DeliveredTime?: string;
   ReadTime?: string;
   FailedReason?: string;
+  Logs?: string;
 }
 
 // ----- Internal Helper -----
@@ -121,6 +123,9 @@ export async function writeSentMessage(row: SentMessageRow): Promise<void> {
   if (row.FailedReason) values.FailedReason = row.FailedReason;
   if (row.JourneyName) values.JourneyName = row.JourneyName;
   if (row.Source) values.Source = row.Source;
+  
+  // Set summary log
+  values.Logs = row.Status === 'failed' ? 'Failed' : 'Success';
 
   await upsertDeRow('WhatsApp_Sent_Messages', keys, values);
 }
@@ -155,6 +160,9 @@ export async function updateSentMessageStatus(row: StatusUpdateRow): Promise<voi
   if (row.DeliveredTime) values.DeliveredTime = row.DeliveredTime;
   if (row.ReadTime) values.ReadTime = row.ReadTime;
   if (row.FailedReason) values.FailedReason = row.FailedReason;
+
+  // Update summary log
+  values.Logs = row.Status === 'failed' ? 'Failed' : 'Success';
 
   await upsertDeRow('WhatsApp_Sent_Messages', keys, values);
 }
