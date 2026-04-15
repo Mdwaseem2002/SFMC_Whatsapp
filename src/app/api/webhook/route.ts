@@ -194,7 +194,11 @@ export async function POST(request: Request) {
                     console.log(`[webhook] Opt-Out keyword detected from ${message.from}. Marking as unsubscribed.`);
                     
                     // 1. Write to SFMC WhatsApp_OptOuts DE
-                    await writeOptOutStatus(message.from as string, 'OptOut');
+                    try {
+                      await writeOptOutStatus(message.from as string, 'OptOut');
+                    } catch (e) {
+                      console.error('[webhook] writeOptOutStatus failed, but continuing with opt-out:', e);
+                    }
                     
                     // 2. Update MongoDB Conversation local state
                     await Conversation.findOneAndUpdate(
