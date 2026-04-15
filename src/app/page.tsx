@@ -10,7 +10,9 @@ import ChatWindow from '@/components/ChatWindow';
 import AddRecipientModal from '@/components/AddRecipientModel';
 import TemplatesPanel from '@/components/TemplatesPanel';
 import BulkSendPanel from '@/components/BulkSendPanel';
+import ToastNotification from '@/components/ToastNotification';
 import { useRealtimeMessages } from '@/app/hooks/useRealtimeMessages';
+import { useGlobalNotifications } from '@/app/hooks/useGlobalNotifications';
 
 import { Contact, Message, MessageStatus } from '@/types';
 import { FaCog } from "react-icons/fa";
@@ -45,6 +47,39 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<SidebarTab>('chats');
   const [preSelectedTemplate, setPreSelectedTemplate] = useState<TemplateForBulk | null>(null);
   
+  // Global notification system
+  const selectedPhoneNormalized = selectedContact ? normalizePhone(selectedContact.phoneNumber) : null;
+  const {
+    unreadCounts,
+    clearUnread,
+    latestNotification,
+    dismissNotification,
+    incomingMessageEvent,
+  } = useGlobalNotifications(selectedPhoneNormalized);
+  
+  // Real-time synchronization for unselected chats and background updates
+  useEffect(() => {
+    if (incomingMessageEvent) {
+      const normPhone = normalizePhone(incomingMessageEvent.phoneNumber);
+      setMessages(prev => {
+        const contactMessages = prev[normPhone] || [];
+        // Prevent duplicate messages
+        if (contactMessages.some(m => m.id === incomingMessageEvent.message.id)) {
+          // If message exists, just update its status
+          return {
+            ...prev,
+            [normPhone]: contactMessages.map(m => m.id === incomingMessageEvent.message.id ? { ...m, ...incomingMessageEvent.message } : m)
+          };
+        }
+        // Add new message to the state so the ChatList updates instantly
+        return {
+          ...prev,
+          [normPhone]: [...contactMessages, incomingMessageEvent.message]
+        };
+      });
+    }
+  }, [incomingMessageEvent]);
+
   // Load config from localStorage on component mount
   useEffect(() => {
     const savedConfig = localStorage.getItem('whatsappConfig');
@@ -117,6 +152,20 @@ export default function Home() {
 
   const handleContactSelect = (contact: Contact) => {
     setSelectedContact(contact);
+    // Clear unread count when selecting a contact
+    clearUnread(contact.phoneNumber);
+  };
+
+  // Handle clicking on a toast notification — navigate to that contact
+  const handleToastClick = (phoneNumber: string) => {
+    dismissNotification();
+    const normalized = normalizePhone(phoneNumber);
+    const contact = contacts.find(c => normalizePhone(c.phoneNumber) === normalized);
+    if (contact) {
+      setSelectedContact(contact);
+      clearUnread(phoneNumber);
+      setActiveTab('chats');
+    }
   };
 
   const sendMessage = async (content: string) => {
@@ -320,6 +369,7 @@ export default function Home() {
                   onEditContact={handleEditContact}
                   onDeleteContact={handleDeleteContact}
                   messages={messages}
+                  unreadCounts={unreadCounts}
                 />
               </>
             )}
@@ -362,6 +412,17 @@ export default function Home() {
         <AddRecipientModal 
           onAdd={handleAddContact} 
           onClose={() => setShowAddModal(false)} 
+        />
+      )}
+
+      {/* Toast Notification */}
+      {latestNotification && (
+        <ToastNotification
+          phoneNumber={latestNotification.phoneNumber}
+          contactName={latestNotification.contactName}
+          messagePreview={latestNotification.message.content}
+          onDismiss={dismissNotification}
+          onClick={handleToastClick}
         />
       )}
     </main>

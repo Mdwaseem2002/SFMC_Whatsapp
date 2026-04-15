@@ -21,41 +21,57 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Phone number is required' }, { status: 400 });
   }
 
-  // Create a transform stream for Server-Sent Events
+  const encoder = new TextEncoder();
+  let messageListener: ((message: Message) => void) | null = null;
+  let heartbeatInterval: ReturnType<typeof setInterval> | null = null;
+
   const stream = new ReadableStream({
     start(controller) {
-      // Create a listener for new messages
-      const messageListener = (message: Message) => {
+      // Send initial connection event
+      controller.enqueue(encoder.encode(`: connected\n\n`));
+
+      messageListener = (message: Message) => {
         try {
           const eventData = JSON.stringify(message);
-          controller.enqueue(`data: ${eventData}\n\n`);
-        } catch (error) {
+          controller.enqueue(encoder.encode(`data: ${eventData}\n\n`));
+        } catch {
           console.warn('Could not enqueue to closed SSE controller. Removing listener.');
-          if (messageEmitters[phoneNumber]) {
+          if (messageListener && messageEmitters[phoneNumber]) {
             messageEmitters[phoneNumber].delete(messageListener);
           }
         }
       };
 
-      // Initialize emitters for this phone number if not exists
       if (!messageEmitters[phoneNumber]) {
         messageEmitters[phoneNumber] = new Set();
       }
       messageEmitters[phoneNumber].add(messageListener);
 
-      // Cleanup function
-      return () => {
+      // Heartbeat every 30s to keep alive
+      heartbeatInterval = setInterval(() => {
+        try {
+          controller.enqueue(encoder.encode(`: heartbeat\n\n`));
+        } catch {
+          if (heartbeatInterval) clearInterval(heartbeatInterval);
+          if (messageListener && messageEmitters[phoneNumber]) {
+            messageEmitters[phoneNumber].delete(messageListener);
+          }
+        }
+      }, 30000);
+    },
+    cancel() {
+      if (heartbeatInterval) clearInterval(heartbeatInterval);
+      if (messageListener && messageEmitters[phoneNumber]) {
         messageEmitters[phoneNumber].delete(messageListener);
-      };
+      }
     }
   });
 
-  // Return the Server-Sent Events response
   return new Response(stream, {
     headers: {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
-      'Connection': 'keep-open'
+      'Connection': 'keep-alive'
     }
   });
 }

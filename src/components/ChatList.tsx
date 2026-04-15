@@ -11,6 +11,7 @@ interface ChatListProps {
   onEditContact: (contact: Contact) => void;
   onDeleteContact: (contactId: string) => void;
   messages: Record<string, Message[]>;
+  unreadCounts?: Record<string, number>;
 }
 
 const ChatList: React.FC<ChatListProps> = ({
@@ -19,7 +20,8 @@ const ChatList: React.FC<ChatListProps> = ({
   onSelectContact,
   onEditContact,
   onDeleteContact,
-  messages
+  messages,
+  unreadCounts = {}
 }) => {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
@@ -102,11 +104,19 @@ const ChatList: React.FC<ChatListProps> = ({
         </div>
       ) : (
         <div>
-          {contacts.map(contact => {
+          {[...contacts]
+            .sort((a, b) => {
+              const aUnread = unreadCounts[a.phoneNumber.replace(/^\+/, '')] || 0;
+              const bUnread = unreadCounts[b.phoneNumber.replace(/^\+/, '')] || 0;
+              return bUnread - aUnread;
+            })
+            .map(contact => {
             const lastMessage = getLastMessage(contact.phoneNumber);
             const isSelected = selectedContact?.id === contact.id;
             const isDeleting = deleteConfirmId === contact.id;
             const isEditing = editingContact?.id === contact.id;
+            const normalizedPhone = contact.phoneNumber.replace(/^\+/, '');
+            const unreadCount = unreadCounts[normalizedPhone] || 0;
             const initials = contact.name
               .split(' ')
               .map(word => word.charAt(0).toUpperCase())
@@ -165,10 +175,29 @@ const ChatList: React.FC<ChatListProps> = ({
                         {contact.name}
                       </h3>
                     )}
-                    {!isEditing && lastMessage.time && (
-                      <span className="text-[11px] ml-2 flex-shrink-0" style={{ color: '#94a3b8' }}>
-                        {lastMessage.time}
-                      </span>
+                    {!isEditing && (
+                      <div className="flex items-center gap-1.5 ml-2 flex-shrink-0">
+                        {lastMessage.time && (
+                          <span className="text-[11px]" style={{ color: unreadCount > 0 ? '#8b5cf6' : '#94a3b8' }}>
+                            {lastMessage.time}
+                          </span>
+                        )}
+                        {unreadCount > 0 && !isSelected && (
+                          <span
+                            className="unread-badge unread-badge-pulse inline-flex items-center justify-center text-[10px] font-bold text-white"
+                            style={{
+                              background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+                              minWidth: '20px',
+                              height: '20px',
+                              borderRadius: '10px',
+                              padding: '0 5px',
+                              boxShadow: '0 2px 8px rgba(139, 92, 246, 0.4)',
+                            }}
+                          >
+                            {unreadCount > 99 ? '99+' : unreadCount}
+                          </span>
+                        )}
+                      </div>
                     )}
                   </div>
 

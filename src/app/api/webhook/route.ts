@@ -154,6 +154,16 @@ export async function POST(request: Request) {
                 // --- Emit SSE for real-time frontend update ---
                 if (storeResult.success) {
                   const normalizedPhone = (message.from as string).replace(/^\+/, '');
+
+                  // Extract contact name for notification display
+                  const contacts = value.contacts as Array<Record<string, unknown>> | undefined;
+                  let notifContactName = normalizedPhone;
+                  if (contacts && contacts.length > 0) {
+                    const profile = (contacts[0] as Record<string, unknown>).profile as Record<string, string> | undefined;
+                    notifContactName = profile?.name || normalizedPhone;
+                  }
+
+                  // Per-phone SSE emit (existing)
                   await fetch(`${appUrl}/api/messages/stream`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -162,6 +172,17 @@ export async function POST(request: Request) {
                       message: storeResult.message
                     })
                   }).catch(err => console.error('[webhook] SSE emit failed:', err));
+
+                  // Global notification SSE emit (NEW — for toasts, badges, browser notifications)
+                  await fetch(`${appUrl}/api/messages/stream/global`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      phoneNumber: normalizedPhone,
+                      message: storeResult.message,
+                      contactName: notifContactName
+                    })
+                  }).catch(err => console.error('[webhook] Global notification emit failed:', err));
                 }
 
                 // --- Write to SFMC WhatsApp_Received_Messages DE ---

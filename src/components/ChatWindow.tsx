@@ -66,18 +66,35 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Scroll to bottom when messages change
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    if (!isLoading && mounted) {
+      const timeout = setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      }, 150);
+      return () => clearTimeout(timeout);
+    }
+  }, [messages, isLoading, mounted]);
 
-  // Simulate loading state
+  // Simulate loading state and instant scroll on chat open
   useEffect(() => {
     setIsLoading(true);
-    const timer = setTimeout(() => setIsLoading(false), 400);
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+      if (mounted) {
+        setTimeout(() => {
+          messagesEndRef.current?.scrollIntoView({ behavior: 'instant', block: 'end' });
+        }, 50);
+      }
+    }, 400);
     return () => clearTimeout(timer);
-  }, [contact.id]);
+  }, [contact.id, mounted]);
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -156,11 +173,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         <div className="flex-1 min-w-0">
           <h2 className="text-[15px] font-semibold truncate" style={{ color: '#0f172a' }}>{contact.name}</h2>
           <p className="text-[11px]" style={{ color: '#64748b' }}>
-            {contact.online ? (
-              <span style={{ color: '#10b981' }}>Online</span>
-            ) : (
-              formatLastSeen(contact.lastSeen)
-            )}
+            {mounted ? (
+              contact.online ? (
+                <span style={{ color: '#10b981' }}>Online</span>
+              ) : (
+                formatLastSeen(contact.lastSeen)
+              )
+            ) : null}
           </p>
         </div>
 
@@ -207,7 +226,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               {/* Date separator */}
               <div className="flex justify-center my-3">
                 <span className="text-[11px] px-4 py-1.5 rounded-full font-medium" style={{ background: 'rgba(255,255,255,0.85)', color: '#64748b', border: '1px solid #e2e8f0', backdropFilter: 'blur(4px)' }}>
-                  {date}
+                  {mounted ? date : '...'}
                 </span>
               </div>
               
@@ -239,7 +258,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                         </span>
                         <span className="inline-flex items-end ml-1 float-right mt-[3px] pl-1 gap-[3px]">
                           <span className="text-[11px] leading-none" style={{ color: isSent ? 'rgba(255,255,255,0.6)' : '#94a3b8' }}>
-                            {formatMessageTime(message.timestamp)}
+                            {mounted ? formatMessageTime(message.timestamp) : ''}
                           </span>
                           {isSent && (
                             <span className="text-[13px] leading-none mb-[-1px]">
