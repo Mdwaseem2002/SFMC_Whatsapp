@@ -5,60 +5,80 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WhatsApp Activity Configuration</title>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+    
     * { margin: 0; padding: 0; box-sizing: border-box; }
     
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #0b141a;
-      color: #e9edef;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f8fafc;
+      color: #1e293b;
       padding: 24px;
       min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 500px;
+      background: rgba(255, 255, 255, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 10px 40px rgba(139, 92, 246, 0.08), 0 1px 3px rgba(0,0,0,0.04);
     }
 
     .header {
       display: flex;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 24px;
-      padding-bottom: 16px;
-      border-bottom: 1px solid #2a3942;
+      gap: 16px;
+      margin-bottom: 28px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid rgba(139, 92, 246, 0.1);
     }
 
     .header-icon {
-      width: 36px;
-      height: 36px;
-      background: linear-gradient(135deg, #00A884, #075E54);
-      border-radius: 10px;
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, #8b5cf6 0%, #c084fc 100%);
+      border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 18px;
+      font-size: 20px;
+      box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
     }
 
     .header h1 {
-      font-size: 16px;
+      font-size: 18px;
       font-weight: 600;
-      color: #e9edef;
+      color: #0f172a;
+      letter-spacing: -0.3px;
     }
 
     .header p {
-      font-size: 11px;
-      color: #8696a0;
-      margin-top: 2px;
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 4px;
+      font-weight: 500;
     }
 
     .form-group {
-      margin-bottom: 16px;
+      margin-bottom: 20px;
     }
 
     label {
       display: block;
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: #8696a0;
-      margin-bottom: 6px;
+      letter-spacing: 0.8px;
+      color: #475569;
+      margin-bottom: 8px;
     }
 
     label .required {
@@ -67,54 +87,57 @@
 
     input, select, textarea {
       width: 100%;
-      padding: 10px 12px;
-      background: #1f2c34;
-      border: 1px solid #2a3942;
-      border-radius: 10px;
-      color: #e9edef;
-      font-size: 13px;
+      padding: 12px 16px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      color: #1e293b;
+      font-size: 14px;
       font-family: inherit;
-      transition: border-color 0.2s;
+      transition: all 0.2s ease;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.02) inset;
     }
 
     input:focus, select:focus, textarea:focus {
       outline: none;
-      border-color: #00A884;
-      box-shadow: 0 0 0 2px rgba(0, 168, 132, 0.15);
+      border-color: #8b5cf6;
+      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+      background: #fff;
     }
 
     input::placeholder, textarea::placeholder {
-      color: #667781;
+      color: #94a3b8;
     }
 
     select {
       appearance: none;
       cursor: pointer;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238696a0' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
       background-repeat: no-repeat;
-      background-position: right 12px center;
-      padding-right: 32px;
+      background-position: right 14px center;
+      padding-right: 40px;
     }
 
     select option {
-      background: #1f2c34;
-      color: #e9edef;
+      background: #ffffff;
+      color: #1e293b;
     }
 
     textarea {
       resize: vertical;
-      min-height: 60px;
+      min-height: 80px;
     }
 
     .hint {
-      font-size: 10px;
-      color: #667781;
-      margin-top: 4px;
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 6px;
+      font-weight: 400;
     }
 
     .row {
       display: flex;
-      gap: 12px;
+      gap: 16px;
     }
 
     .row .form-group {
@@ -123,57 +146,72 @@
 
     .btn-save {
       width: 100%;
-      padding: 12px;
-      background: #00A884;
+      padding: 14px;
+      background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
       color: white;
       border: none;
-      border-radius: 10px;
-      font-size: 14px;
+      border-radius: 12px;
+      font-size: 15px;
       font-weight: 600;
       cursor: pointer;
-      transition: background 0.2s;
-      margin-top: 8px;
+      transition: all 0.2s ease;
+      margin-top: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
+      gap: 10px;
+      box-shadow: 0 4px 14px rgba(124, 58, 237, 0.25);
     }
 
-    .btn-save:hover {
-      background: #06cf9c;
+    .btn-save:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(124, 58, 237, 0.3);
+    }
+
+    .btn-save:active:not(:disabled) {
+      transform: translateY(1px);
     }
 
     .btn-save:disabled {
-      background: #2a3942;
+      background: #e2e8f0;
+      color: #94a3b8;
       cursor: not-allowed;
-      opacity: 0.6;
+      box-shadow: none;
     }
 
     .status-bar {
-      margin-top: 12px;
-      padding: 8px 12px;
-      border-radius: 8px;
-      font-size: 12px;
+      margin-top: 16px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 500;
       display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     .status-bar.success {
       display: block;
-      background: rgba(0, 168, 132, 0.15);
-      color: #00A884;
-      border: 1px solid rgba(0, 168, 132, 0.3);
+      background: #f0fdf4;
+      color: #16a34a;
+      border: 1px solid #bbf7d0;
     }
 
     .status-bar.error {
       display: block;
-      background: rgba(239, 68, 68, 0.15);
-      color: #ef4444;
-      border: 1px solid rgba(239, 68, 68, 0.3);
+      background: #fef2f2;
+      color: #dc2626;
+      border: 1px solid #fecaca;
     }
   </style>
 </head>
 <body>
 
+<div class="container">
   <div class="header">
     <div class="header-icon">💬</div>
     <div>
@@ -194,7 +232,7 @@
     <div class="form-group">
       <label>Phone Column Name <span class="required">*</span></label>
       <input type="text" id="phoneField" value="MobilePhone" placeholder="MobilePhone" />
-      <p class="hint">Exact column name from your Data Extension (e.g. Phone, MobilePhone, Mobile)</p>
+      <p class="hint">Exact column name from your Data Extension</p>
     </div>
     <div class="form-group">
       <label>Language</label>
@@ -208,12 +246,13 @@
     <p class="hint">Comma-separated values to replace {{1}}, {{2}}, etc. in the template body</p>
   </div>
 
-  <button class="btn-save" id="saveBtn" onclick="save()">
+  <button class="btn-save" id="saveBtn" onclick="save()" disabled>
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>
     Save Configuration
   </button>
 
   <div id="statusBar" class="status-bar"></div>
+</div>
 
   <!-- Postmonger for JB SDK communication -->
   <script src="https://cdn.jsdelivr.net/npm/postmonger/postmonger.min.js"></script>
