@@ -176,15 +176,15 @@ export default function ChatComponent({ phoneNumber }: ChatComponentProps) {
   }, [messages]);
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
+    <div className="flex flex-col h-screen" style={{ background: '#f8fafc' }}>
       {/* Header */}
-      <div className="bg-blue-600 text-white p-4 shadow-md">
+      <div className="p-4" style={{ background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)', color: 'white', boxShadow: '0 4px 14px rgba(124,58,237,0.25)' }}>
         <h2 className="font-semibold">Chat with {phoneNumber}</h2>
       </div>
       
       {/* Error display */}
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded relative">
+        <div className="px-4 py-2 rounded-none" style={{ background: 'rgba(239,68,68,0.08)', color: '#ef4444', borderBottom: '1px solid rgba(239,68,68,0.15)' }}>
           {error}
           <button 
             className="ml-2 font-bold" 
@@ -196,9 +196,9 @@ export default function ChatComponent({ phoneNumber }: ChatComponentProps) {
       )}
       
       {/* Messages container with improved scrolling */}
-      <div className="flex-grow overflow-y-auto p-4 space-y-3">
+      <div className="flex-grow overflow-y-auto p-4 space-y-3" style={{ background: '#f1f5f9' }}>
         {messages.length === 0 && (
-          <div className="text-center text-gray-500 py-10">
+          <div className="text-center py-10" style={{ color: '#94a3b8' }}>
             No messages yet. Start a conversation!
           </div>
         )}
@@ -213,11 +213,13 @@ export default function ChatComponent({ phoneNumber }: ChatComponentProps) {
             }`}
           >
             <div 
-              className={`max-w-[70%] p-3 rounded-lg shadow-sm ${
-                message.sender === 'user' 
-                  ? 'bg-blue-500 text-white' 
-                  : 'bg-white text-black border border-gray-200'
-              }`}
+              className="max-w-[70%] p-3 rounded-2xl"
+              style={{
+                background: message.sender === 'user' ? 'linear-gradient(135deg, #8b5cf6, #7c3aed)' : '#ffffff',
+                color: message.sender === 'user' ? 'white' : '#0f172a',
+                boxShadow: message.sender === 'user' ? '0 2px 12px rgba(124,58,237,0.2)' : '0 1px 6px rgba(0,0,0,0.05)',
+                border: message.sender === 'user' ? 'none' : '1px solid #f1f5f9',
+              }}
             >
               <div>{message.content}</div>
               <div className="flex items-center justify-between mt-1">
@@ -239,25 +241,26 @@ export default function ChatComponent({ phoneNumber }: ChatComponentProps) {
       </div>
 
       {/* Message input with improved styling */}
-      <div className="flex p-4 border-t bg-white shadow-inner">
+      <div className="flex p-4 border-t" style={{ background: '#ffffff', borderColor: '#e2e8f0' }}>
         <input 
           type="text"
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
           onKeyPress={(e) => e.key === 'Enter' && !isLoading && sendMessage()}
           disabled={isLoading}
-          className="flex-grow p-3 border rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="flex-grow p-3 rounded-l-xl focus:outline-none text-sm"
+          style={{ border: '1px solid #e2e8f0', background: '#f8fafc', color: '#0f172a' }}
           placeholder="Type a message..."
         />
         <button 
           onClick={sendMessage}
           disabled={isLoading || !newMessage.trim()}
-
-          className={`p-3 rounded-r-lg transition-colors ${
-            isLoading || !newMessage.trim()
-              ? 'bg-blue-300 cursor-not-allowed'
-              : 'bg-blue-500 hover:bg-blue-600 active:bg-blue-700'
-          } text-white font-medium`}
+          className="p-3 rounded-r-xl transition-all font-medium text-white text-sm"
+          style={{
+            background: isLoading || !newMessage.trim() ? '#e2e8f0' : 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+            color: isLoading || !newMessage.trim() ? '#94a3b8' : '#ffffff',
+            cursor: isLoading || !newMessage.trim() ? 'not-allowed' : 'pointer',
+          }}
         >
           {isLoading ? 'Sending...' : 'Send'}
         </button>

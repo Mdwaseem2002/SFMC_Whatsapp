@@ -47,17 +47,23 @@ const WhatsAppConfig: React.FC<WhatsAppConfigProps> = ({ onSave }) => {
     onSave(accessToken, phoneNumberId);
   };
 
+  const inputStyle = {
+    background: '#f8fafc',
+    border: '1px solid #e2e8f0',
+    color: '#0f172a',
+  };
+
   return (
-    <div className="flex-1 overflow-y-auto bg-[#111B21] p-4">
+    <div className="flex-1 overflow-y-auto p-4" style={{ background: '#ffffff' }}>
       <div className="max-w-lg mx-auto">
-        <h2 className="text-lg font-semibold text-[#e9edef] text-center mb-6">
+        <h2 className="text-lg font-semibold text-center mb-6" style={{ color: '#0f172a' }}>
           WhatsApp Business API Setup
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Access Token */}
           <div>
-            <label className="flex items-center gap-1.5 text-[#8696a0] text-xs font-semibold uppercase tracking-wider mb-2">
+            <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#64748b' }}>
               <Key size={12} />
               Meta WhatsApp API Access Token
             </label>
@@ -65,15 +71,18 @@ const WhatsAppConfig: React.FC<WhatsAppConfigProps> = ({ onSave }) => {
               type="password"
               value={accessToken}
               onChange={(e) => setAccessToken(e.target.value)}
-              className="w-full p-3 bg-[#1f2c34] border border-[#2a3942] rounded-xl text-[#e9edef] text-sm focus:outline-none focus:border-[#00A884] focus:ring-1 focus:ring-[#00A884]/30 transition-all placeholder:text-[#667781]"
+              className="w-full p-3 rounded-xl text-sm focus:outline-none transition-all"
+              style={inputStyle}
+              onFocus={e => { e.currentTarget.style.borderColor = '#8b5cf6'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(139,92,246,0.15)'; }}
+              onBlur={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.boxShadow = 'none'; }}
               placeholder="Enter your access token"
             />
-            <p className="text-[11px] text-[#667781] mt-1.5">Find this in your Meta Developer dashboard</p>
+            <p className="text-[11px] mt-1.5" style={{ color: '#94a3b8' }}>Find this in your Meta Developer dashboard</p>
           </div>
 
           {/* Phone Number ID */}
           <div>
-            <label className="flex items-center gap-1.5 text-[#8696a0] text-xs font-semibold uppercase tracking-wider mb-2">
+            <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#64748b' }}>
               <Phone size={12} />
               WhatsApp Business Phone Number ID
             </label>
@@ -81,70 +90,84 @@ const WhatsAppConfig: React.FC<WhatsAppConfigProps> = ({ onSave }) => {
               type="text"
               value={phoneNumberId}
               onChange={(e) => setPhoneNumberId(e.target.value)}
-              className="w-full p-3 bg-[#1f2c34] border border-[#2a3942] rounded-xl text-[#e9edef] text-sm focus:outline-none focus:border-[#00A884] focus:ring-1 focus:ring-[#00A884]/30 transition-all placeholder:text-[#667781]"
+              className="w-full p-3 rounded-xl text-sm focus:outline-none transition-all"
+              style={inputStyle}
+              onFocus={e => { e.currentTarget.style.borderColor = '#8b5cf6'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(139,92,246,0.15)'; }}
+              onBlur={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.boxShadow = 'none'; }}
               placeholder="Enter your phone number ID"
             />
-            <p className="text-[11px] text-[#667781] mt-1.5">The ID of your registered WhatsApp Business phone number</p>
+            <p className="text-[11px] mt-1.5" style={{ color: '#94a3b8' }}>The ID of your registered WhatsApp Business phone number</p>
           </div>
 
           {/* Webhook Config */}
-          <div className="bg-[#1f2c34] p-4 rounded-xl border border-[#2a3942]">
-            <h3 className="flex items-center gap-1.5 text-sm font-semibold text-[#e9edef] mb-1">
-              <Webhook size={14} />
+          <div className="p-4 rounded-xl" style={{ background: 'rgba(139,92,246,0.04)', border: '1px solid rgba(139,92,246,0.12)' }}>
+            <h3 className="flex items-center gap-1.5 text-sm font-semibold mb-1" style={{ color: '#0f172a' }}>
+              <Webhook size={14} style={{ color: '#8b5cf6' }} />
               Webhook Configuration
             </h3>
-            <p className="text-xs text-[#8696a0] mb-4">Configure a webhook in Meta Developer Dashboard to receive messages.</p>
+            <p className="text-xs mb-4" style={{ color: '#64748b' }}>Configure a webhook in Meta Developer Dashboard to receive messages.</p>
 
             {/* Callback URL */}
             <div className="mb-4">
-              <label className="block text-[#8696a0] text-xs font-medium mb-1.5">Callback URL</label>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: '#64748b' }}>Callback URL</label>
               <div className="flex items-center gap-2">
                 <input
                   type="text"
                   value={webhookUrl || 'Your-hosted-URL/api/webhook'}
                   onChange={(e) => setWebhookUrl(e.target.value)}
-                  className="flex-1 p-2.5 bg-[#0b141a] border border-[#2a3942] rounded-lg text-[#e9edef] text-xs focus:outline-none focus:border-[#00A884] transition-all placeholder:text-[#667781]"
+                  className="flex-1 p-2.5 rounded-lg text-xs focus:outline-none transition-all"
+                  style={{ background: '#ffffff', border: '1px solid #e2e8f0', color: '#0f172a' }}
+                  onFocus={e => { e.currentTarget.style.borderColor = '#8b5cf6'; }}
+                  onBlur={e => { e.currentTarget.style.borderColor = '#e2e8f0'; }}
                 />
                 <button
                   type="button"
-                  className="p-2.5 bg-[#2a3942] hover:bg-[#3b4f5a] text-[#8696a0] hover:text-[#e9edef] rounded-lg transition-colors"
+                  className="p-2.5 rounded-lg transition-all"
+                  style={{ background: '#f1f5f9', color: '#64748b' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(139,92,246,0.1)'; e.currentTarget.style.color = '#8b5cf6'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#64748b'; }}
                   onClick={() => handleCopy(webhookUrl || 'Your-hosted-URL/api/webhook', 'webhook')}
                 >
-                  {copiedField === 'webhook' ? <Check size={14} className="text-[#00A884]" /> : <Copy size={14} />}
+                  {copiedField === 'webhook' ? <Check size={14} style={{ color: '#10b981' }} /> : <Copy size={14} />}
                 </button>
               </div>
-              <p className="text-[10px] text-[#667781] mt-1">Replace with your actual hosted URL once deployed</p>
+              <p className="text-[10px] mt-1" style={{ color: '#94a3b8' }}>Replace with your actual hosted URL once deployed</p>
             </div>
 
             {/* Verification Token */}
             <div>
-              <label className="block text-[#8696a0] text-xs font-medium mb-1.5">Verification Token</label>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: '#64748b' }}>Verification Token</label>
               <div className="flex items-center gap-2">
                 <input
                   type="text"
                   value={verificationToken}
                   readOnly
-                  className="flex-1 p-2.5 bg-[#0b141a] border border-[#2a3942] rounded-lg text-[#8696a0] text-xs"
+                  className="flex-1 p-2.5 rounded-lg text-xs"
+                  style={{ background: '#ffffff', border: '1px solid #e2e8f0', color: '#64748b' }}
                 />
                 <button
                   type="button"
-                  className="p-2.5 bg-[#2a3942] hover:bg-[#3b4f5a] text-[#8696a0] hover:text-[#e9edef] rounded-lg transition-colors"
+                  className="p-2.5 rounded-lg transition-all"
+                  style={{ background: '#f1f5f9', color: '#64748b' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(139,92,246,0.1)'; e.currentTarget.style.color = '#8b5cf6'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#64748b'; }}
                   onClick={() => handleCopy(verificationToken, 'token')}
                 >
-                  {copiedField === 'token' ? <Check size={14} className="text-[#00A884]" /> : <Copy size={14} />}
+                  {copiedField === 'token' ? <Check size={14} style={{ color: '#10b981' }} /> : <Copy size={14} />}
                 </button>
               </div>
             </div>
           </div>
 
           {error && (
-            <p className="text-red-400 text-xs text-center bg-red-500/10 py-2 px-3 rounded-lg">{error}</p>
+            <p className="text-xs text-center py-2 px-3 rounded-xl" style={{ color: '#ef4444', background: 'rgba(239,68,68,0.08)' }}>{error}</p>
           )}
 
           {/* Save Button */}
           <motion.button
             type="submit"
-            className="w-full flex items-center justify-center gap-2 bg-[#00A884] hover:bg-[#06cf9c] text-white font-semibold py-3 px-6 rounded-xl transition-colors text-sm"
+            className="w-full flex items-center justify-center gap-2 text-white font-semibold py-3 px-6 rounded-xl transition-all text-sm"
+            style={{ background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)', boxShadow: '0 4px 14px rgba(124,58,237,0.25)' }}
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.99 }}
           >

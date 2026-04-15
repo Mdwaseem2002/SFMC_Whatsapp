@@ -38,67 +38,83 @@ const AddRecipientModal: React.FC<AddRecipientModalProps> = ({ onAdd, onClose })
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+    <div className="fixed inset-0 flex items-center justify-center z-50" style={{ background: 'rgba(15,23,42,0.4)', backdropFilter: 'blur(8px)' }}>
       <motion.div
         initial={{ opacity: 0, scale: 0.9, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.9, y: 20 }}
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-        className="bg-[#1f2c34] rounded-2xl shadow-2xl p-6 w-full max-w-md relative border border-[#2a3942]"
+        className="rounded-2xl shadow-2xl p-6 w-full max-w-md relative"
+        style={{ background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(16px)', border: '1px solid #e2e8f0', boxShadow: '0 20px 60px rgba(139,92,246,0.12)' }}
       >
         <button 
-          className="absolute top-4 right-4 text-[#8696a0] hover:text-[#e9edef] p-1 rounded-full hover:bg-[#2a3942] transition-colors"
+          className="absolute top-4 right-4 p-1.5 rounded-xl transition-all"
+          style={{ color: '#94a3b8' }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(139,92,246,0.1)'; e.currentTarget.style.color = '#8b5cf6'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#94a3b8'; }}
           onClick={onClose}
         >
           <X size={18} />
         </button>
 
         <div className="flex items-center gap-3 mb-5">
-          <div className="p-2 bg-[#00A884]/20 rounded-full">
-            <UserPlus size={20} className="text-[#00A884]" />
+          <div className="p-2.5 rounded-xl" style={{ background: 'rgba(139,92,246,0.1)' }}>
+            <UserPlus size={20} style={{ color: '#8b5cf6' }} />
           </div>
-          <h2 className="text-lg font-semibold text-[#e9edef]">Add New Recipient</h2>
+          <h2 className="text-lg font-semibold" style={{ color: '#0f172a' }}>Add New Recipient</h2>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-[#8696a0] text-xs font-semibold mb-1.5 uppercase tracking-wider">Name</label>
+            <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: '#64748b' }}>Name</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full p-3 bg-[#0b141a] border border-[#2a3942] rounded-xl text-[#e9edef] text-sm focus:outline-none focus:border-[#00A884] focus:ring-1 focus:ring-[#00A884]/30 transition-all placeholder:text-[#667781]"
+              className="w-full p-3 rounded-xl text-sm focus:outline-none transition-all"
+              style={{ background: '#f8fafc', border: '1px solid #e2e8f0', color: '#0f172a' }}
+              onFocus={e => { e.currentTarget.style.borderColor = '#8b5cf6'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(139,92,246,0.15)'; }}
+              onBlur={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.boxShadow = 'none'; }}
               placeholder="John Doe"
             />
           </div>
 
           <div>
-            <label className="block text-[#8696a0] text-xs font-semibold mb-1.5 uppercase tracking-wider">Phone Number</label>
+            <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: '#64748b' }}>Phone Number</label>
             <input
               type="text"
               value={phoneNumber}
               onChange={(e) => setPhoneNumber(e.target.value)}
-              className="w-full p-3 bg-[#0b141a] border border-[#2a3942] rounded-xl text-[#e9edef] text-sm focus:outline-none focus:border-[#00A884] focus:ring-1 focus:ring-[#00A884]/30 transition-all placeholder:text-[#667781]"
+              className="w-full p-3 rounded-xl text-sm focus:outline-none transition-all"
+              style={{ background: '#f8fafc', border: '1px solid #e2e8f0', color: '#0f172a' }}
+              onFocus={e => { e.currentTarget.style.borderColor = '#8b5cf6'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(139,92,246,0.15)'; }}
+              onBlur={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.boxShadow = 'none'; }}
               placeholder="919876543210"
             />
-            <p className="text-[10px] text-[#667781] mt-1.5">Include country code without + (e.g., 91 for India, 1 for US)</p>
+            <p className="text-[10px] mt-1.5" style={{ color: '#94a3b8' }}>Include country code without + (e.g., 91 for India, 1 for US)</p>
           </div>
 
           {error && (
-            <p className="text-red-400 text-xs text-center bg-red-500/10 py-2 px-3 rounded-lg">{error}</p>
+            <p className="text-xs text-center py-2 px-3 rounded-xl" style={{ color: '#ef4444', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)' }}>{error}</p>
           )}
 
           <div className="flex gap-3 pt-1">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-2.5 rounded-xl bg-[#2a3942] hover:bg-[#3b4f5a] text-[#e9edef] font-medium text-sm transition-colors"
+              className="flex-1 py-2.5 rounded-xl font-medium text-sm transition-all"
+              style={{ background: '#f1f5f9', color: '#64748b' }}
+              onMouseEnter={e => e.currentTarget.style.background = '#e2e8f0'}
+              onMouseLeave={e => e.currentTarget.style.background = '#f1f5f9'}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-[2] py-2.5 rounded-xl bg-[#00A884] hover:bg-[#06cf9c] text-white font-medium text-sm transition-colors flex items-center justify-center gap-1.5"
+              className="flex-[2] py-2.5 rounded-xl text-white font-medium text-sm transition-all flex items-center justify-center gap-1.5"
+              style={{ background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)', boxShadow: '0 4px 14px rgba(124,58,237,0.25)' }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(124,58,237,0.3)'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(124,58,237,0.25)'; }}
             >
               <UserPlus size={15} />
               Add Recipient

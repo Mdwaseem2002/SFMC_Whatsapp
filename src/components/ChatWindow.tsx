@@ -98,17 +98,17 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const getStatusIcon = (status: string | undefined) => {
     switch (status) {
       case MessageStatus.PENDING:
-        return <span className="text-[#667781]">✓</span>;
+        return <span style={{ color: 'rgba(255,255,255,0.5)' }}>✓</span>;
       case MessageStatus.SENT:
-        return <span className="text-[#667781] tracking-[-0.15em]">✓✓</span>;
+        return <span style={{ color: 'rgba(255,255,255,0.6)', letterSpacing: '-0.15em' }}>✓✓</span>;
       case MessageStatus.DELIVERED:
-        return <span className="text-[#667781] tracking-[-0.15em]">✓✓</span>;
+        return <span style={{ color: 'rgba(255,255,255,0.6)', letterSpacing: '-0.15em' }}>✓✓</span>;
       case MessageStatus.READ:
-        return <span className="text-[#53bdeb] tracking-[-0.15em]">✓✓</span>; 
+        return <span style={{ color: '#a5f3fc', letterSpacing: '-0.15em' }}>✓✓</span>; 
       case MessageStatus.FAILED:
-        return <span className="text-red-400 font-bold">✗</span>;
+        return <span style={{ color: '#fca5a5', fontWeight: 'bold' }}>✗</span>;
       default:
-        return <span className="text-[#667781]">✓</span>;
+        return <span style={{ color: 'rgba(255,255,255,0.5)' }}>✓</span>;
     }
   };
 
@@ -124,7 +124,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   }, {} as Record<string, Message[]>);
 
   const avatarColor = (() => {
-    const colors = ['#00A884', '#34B7F1', '#F15C6D', '#A15CDE', '#F1AE5C', '#5CCEF1'];
+    const colors = ['#8b5cf6', '#6366f1', '#ec4899', '#f59e0b', '#10b981', '#06b6d4'];
     const hash = contact.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
     return colors[hash % colors.length];
   })();
@@ -132,29 +132,32 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const initials = contact.name.split(' ').map(w => w.charAt(0).toUpperCase()).slice(0, 2).join('');
 
   return (
-    <div className="flex flex-col h-full bg-[#0b141a] overflow-hidden">
+    <div className="flex flex-col h-full overflow-hidden" style={{ background: '#f8fafc' }}>
       {/* ─── Chat Header ─── */}
-      <div className="flex items-center px-4 py-2.5 bg-[#1f2c34] border-b border-[#2a3942]">
+      <div className="flex items-center px-4 py-2.5 border-b" style={{ background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(12px)', borderColor: '#e2e8f0' }}>
         <motion.button 
           onClick={onCloseChat} 
-          className="mr-2 text-[#8696a0] hover:text-[#e9edef] rounded-full p-1.5 hover:bg-[#2a3942] transition-colors"
+          className="mr-2 rounded-xl p-1.5 transition-colors"
+          style={{ color: '#64748b' }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(139,92,246,0.1)'; e.currentTarget.style.color = '#8b5cf6'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#64748b'; }}
           whileTap={{ scale: 0.9 }}
         >
           <ChevronLeft size={22} />
         </motion.button>
 
         <div 
-          className="w-10 h-10 flex items-center justify-center rounded-full mr-3 flex-shrink-0 text-white font-semibold text-sm"
-          style={{ backgroundColor: avatarColor }}
+          className="w-10 h-10 flex items-center justify-center rounded-xl mr-3 flex-shrink-0 text-white font-semibold text-sm"
+          style={{ backgroundColor: avatarColor, boxShadow: `0 4px 12px ${avatarColor}33` }}
         >
           {initials}
         </div>
 
         <div className="flex-1 min-w-0">
-          <h2 className="text-[15px] font-medium text-[#e9edef] truncate">{contact.name}</h2>
-          <p className="text-[11px] text-[#8696a0]">
+          <h2 className="text-[15px] font-semibold truncate" style={{ color: '#0f172a' }}>{contact.name}</h2>
+          <p className="text-[11px]" style={{ color: '#64748b' }}>
             {contact.online ? (
-              <span className="text-[#00A884]">Online</span>
+              <span style={{ color: '#10b981' }}>Online</span>
             ) : (
               formatLastSeen(contact.lastSeen)
             )}
@@ -162,18 +165,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         </div>
 
         <div className="flex items-center gap-1">
-          <button className="text-[#8696a0] hover:text-[#e9edef] p-2 rounded-full hover:bg-[#2a3942] transition-colors">
-            <Video size={18} />
-          </button>
-          <button className="text-[#8696a0] hover:text-[#e9edef] p-2 rounded-full hover:bg-[#2a3942] transition-colors">
-            <Phone size={18} />
-          </button>
-          <button className="text-[#8696a0] hover:text-[#e9edef] p-2 rounded-full hover:bg-[#2a3942] transition-colors">
-            <Search size={18} />
-          </button>
-          <button className="text-[#8696a0] hover:text-[#e9edef] p-2 rounded-full hover:bg-[#2a3942] transition-colors">
-            <MoreVertical size={18} />
-          </button>
+          {[Video, Phone, Search, MoreVertical].map((Icon, i) => (
+            <button key={i} className="p-2 rounded-xl transition-colors" style={{ color: '#94a3b8' }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(139,92,246,0.1)'; e.currentTarget.style.color = '#8b5cf6'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#94a3b8'; }}
+            >
+              <Icon size={18} />
+            </button>
+          ))}
         </div>
       </div>
 
@@ -181,23 +180,23 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       <div
         ref={messagesContainerRef}
         className="flex-1 overflow-y-auto px-[6%] py-3"
-        style={{ backgroundColor: '#0b141a' }}
+        style={{ background: '#f1f5f9' }}
       >
         {/* Loading State */}
         {isLoading ? (
           <div className="flex flex-col items-center justify-center h-full">
             <div className="relative w-8 h-8">
-              <div className="absolute inset-0 border-2 border-[#00A884] border-t-transparent rounded-full animate-spin"></div>
+              <div className="absolute inset-0 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: '#8b5cf6', borderTopColor: 'transparent' }}></div>
             </div>
-            <p className="text-[#667781] text-xs mt-3">Loading messages...</p>
+            <p className="text-xs mt-3" style={{ color: '#94a3b8' }}>Loading messages...</p>
           </div>
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full">
-            <div className="bg-[#1f2c34] rounded-xl px-6 py-4 text-center max-w-xs shadow-lg border border-[#2a3942]">
-              <p className="text-[#e9edef] text-sm">
+            <div className="rounded-2xl px-6 py-4 text-center max-w-xs border" style={{ background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(8px)', borderColor: '#e2e8f0', boxShadow: '0 4px 16px rgba(0,0,0,0.04)' }}>
+              <p className="text-sm font-medium" style={{ color: '#0f172a' }}>
                 No messages yet.
               </p>
-              <p className="text-[#8696a0] text-xs mt-1">
+              <p className="text-xs mt-1" style={{ color: '#64748b' }}>
                 Send a message to start chatting with {contact.name}
               </p>
             </div>
@@ -207,7 +206,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             <div key={date}>
               {/* Date separator */}
               <div className="flex justify-center my-3">
-                <span className="bg-[#1f2c34] text-[#8696a0] text-[11px] px-3 py-1.5 rounded-lg shadow-sm border border-[#2a3942]">
+                <span className="text-[11px] px-4 py-1.5 rounded-full font-medium" style={{ background: 'rgba(255,255,255,0.85)', color: '#64748b', border: '1px solid #e2e8f0', backdropFilter: 'blur(4px)' }}>
                   {date}
                 </span>
               </div>
@@ -223,39 +222,23 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                     className={`flex ${isSent ? 'justify-end' : 'justify-start'} ${isFirstInGroup ? 'mt-2' : 'mt-[3px]'}`}
                   >
                     <div
-                      className={`relative max-w-[65%] px-[9px] pt-[6px] pb-[7px] shadow-sm ${
-                        isSent 
-                          ? 'bg-[#005c4b] rounded-lg' 
-                          : 'bg-[#1f2c34] rounded-lg'
-                      } ${
-                        isSent && isFirstInGroup ? 'rounded-tr-none' : ''
-                      } ${
-                        !isSent && isFirstInGroup ? 'rounded-tl-none' : ''
-                      }`}
+                      className="relative max-w-[65%] px-3 pt-2 pb-2"
+                      style={{
+                        background: isSent ? 'linear-gradient(135deg, #8b5cf6, #7c3aed)' : '#ffffff',
+                        borderRadius: '16px',
+                        borderTopRightRadius: isSent && isFirstInGroup ? '4px' : '16px',
+                        borderTopLeftRadius: !isSent && isFirstInGroup ? '4px' : '16px',
+                        boxShadow: isSent ? '0 2px 12px rgba(124,58,237,0.2)' : '0 1px 6px rgba(0,0,0,0.05)',
+                        border: isSent ? 'none' : '1px solid #f1f5f9',
+                      }}
                     >
-                      {/* Tail for first message in group */}
-                      {isFirstInGroup && isSent && (
-                        <div className="absolute -right-[8px] top-0 w-[8px] h-[13px] overflow-hidden">
-                          <div className="absolute top-0 right-0 w-[12px] h-[12px] bg-[#005c4b] transform rotate-[35deg] origin-top-left"></div>
-                        </div>
-                      )}
-                      {isFirstInGroup && !isSent && (
-                        <div className="absolute -left-[8px] top-0 w-[8px] h-[13px] overflow-hidden">
-                          <div className="absolute top-0 left-0 w-[12px] h-[12px] bg-[#1f2c34] transform -rotate-[35deg] origin-top-right"></div>
-                        </div>
-                      )}
-
                       {/* Message content */}
                       <div className="break-words">
-                        <span className={`text-[13.5px] leading-[19px] ${
-                          isSent ? 'text-[#e9edef]' : 'text-[#e9edef]'
-                        }`}>
+                        <span className="text-[13.5px] leading-[19px]" style={{ color: isSent ? '#ffffff' : '#0f172a' }}>
                           {message.content}
                         </span>
                         <span className="inline-flex items-end ml-1 float-right mt-[3px] pl-1 gap-[3px]">
-                          <span className={`text-[11px] leading-none ${
-                            isSent ? 'text-[#ffffff80]' : 'text-[#667781]'
-                          }`}>
+                          <span className="text-[11px] leading-none" style={{ color: isSent ? 'rgba(255,255,255,0.6)' : '#94a3b8' }}>
                             {formatMessageTime(message.timestamp)}
                           </span>
                           {isSent && (
@@ -278,14 +261,18 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       {/* ─── Emoji Picker ─── */}
       {showEmoji && (
         <motion.div 
-          className="bg-[#1f2c34] border-t border-[#2a3942] p-2 grid grid-cols-9 gap-1 max-h-40 overflow-y-auto"
+          className="p-2 grid grid-cols-9 gap-1 max-h-40 overflow-y-auto border-t"
+          style={{ background: '#ffffff', borderColor: '#e2e8f0' }}
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: "10rem" }}
         >
           {["😊","😂","🤣","❤️","👍","🔥","🎉","😍","😘","🥰","😁","👋","🤔","🙏","👏","🎂","🌹","💯","😎","🤝","💪","🙌","😢","🤗","😇","🥺","😤","🤩"].map(emoji => (
             <button
               key={emoji}
-              className="text-xl hover:bg-[#2a3942] rounded-lg p-1.5 transition-colors"
+              className="text-xl rounded-lg p-1.5 transition-colors"
+              style={{ }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(139,92,246,0.1)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               onClick={() => setNewMessage(current => current + emoji)}
             >
               {emoji}
@@ -295,17 +282,19 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       )}
 
       {/* ─── Message Input ─── */}
-      <div className="px-3 py-2 bg-[#1f2c34] flex items-center gap-2 border-t border-[#2a3942]">
-        <div className="flex-1 flex items-center bg-[#2a3942] rounded-lg px-2 min-h-[42px]">
+      <div className="px-3 py-2.5 flex items-center gap-2 border-t" style={{ background: '#ffffff', borderColor: '#e2e8f0' }}>
+        <div className="flex-1 flex items-center rounded-xl px-2 min-h-[44px]" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
           <button 
-            className="p-1.5 text-[#8696a0] hover:text-[#e9edef] transition-colors rounded-full"
+            className="p-1.5 transition-colors rounded-full"
+            style={{ color: '#94a3b8' }}
             onClick={() => setShowEmoji(!showEmoji)}
           >
             <span className="text-lg">😊</span>
           </button>
           
           <button 
-            className="p-1.5 text-[#8696a0] hover:text-[#e9edef] transition-colors rounded-full"
+            className="p-1.5 transition-colors rounded-full"
+            style={{ color: '#94a3b8' }}
             onClick={handleFileInputClick}
           >
             <Paperclip size={18} />
@@ -325,22 +314,24 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               placeholder="Type a message"
-              className="flex-1 py-2 px-3 bg-transparent text-[#e9edef] text-[14px] focus:outline-none placeholder:text-[#8696a0]"
+              className="flex-1 py-2 px-3 bg-transparent text-[14px] focus:outline-none"
+              style={{ color: '#0f172a' }}
             />
           </form>
           
-          <button className="p-1.5 text-[#8696a0] hover:text-[#e9edef] transition-colors rounded-full">
+          <button className="p-1.5 transition-colors rounded-full" style={{ color: '#94a3b8' }}>
             <Mic size={18} />
           </button>
         </div>
         
         <motion.button
           onClick={handleSubmit}
-          className={`p-2.5 rounded-full transition-colors ${
-            newMessage.trim() 
-              ? 'bg-[#00A884] hover:bg-[#06cf9c] text-white' 
-              : 'bg-[#2a3942] text-[#8696a0]'
-          }`}
+          className="p-2.5 rounded-xl transition-all"
+          style={{
+            background: newMessage.trim() ? 'linear-gradient(135deg, #8b5cf6, #7c3aed)' : '#f1f5f9',
+            color: newMessage.trim() ? '#ffffff' : '#94a3b8',
+            boxShadow: newMessage.trim() ? '0 4px 12px rgba(124,58,237,0.25)' : 'none',
+          }}
           whileTap={{ scale: 0.9 }}
         >
           {newMessage.trim() ? <Send size={18} /> : <Mic size={18} />}

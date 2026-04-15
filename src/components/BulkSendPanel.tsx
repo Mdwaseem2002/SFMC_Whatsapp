@@ -128,11 +128,17 @@ const BulkSendPanel: React.FC<BulkSendPanelProps> = ({ preSelectedTemplate }) =>
 
   const failedResults = results?.results.filter(r => !r.success) || [];
 
+  const inputStyle: React.CSSProperties = {
+    background: '#f8fafc',
+    border: '1px solid #e2e8f0',
+    color: '#0f172a',
+  };
+
   return (
-    <div className="flex-1 overflow-y-auto bg-[#111B21]">
+    <div className="flex-1 overflow-y-auto" style={{ background: '#ffffff' }}>
       {/* Header */}
-      <div className="sticky top-0 bg-[#111B21]/95 backdrop-blur-sm p-3.5 border-b border-[#2a3942] z-10">
-        <h2 className="text-[15px] font-semibold text-[#e9edef] tracking-wide flex items-center gap-2">
+      <div className="sticky top-0 p-3.5 border-b z-10" style={{ background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(8px)', borderColor: '#e2e8f0' }}>
+        <h2 className="text-[15px] font-semibold tracking-wide flex items-center gap-2" style={{ color: '#0f172a' }}>
           <span>📢</span> Bulk Send
         </h2>
       </div>
@@ -140,13 +146,16 @@ const BulkSendPanel: React.FC<BulkSendPanelProps> = ({ preSelectedTemplate }) =>
       <div className="p-4 space-y-4">
         {/* Template Dropdown */}
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1">
-            Select Template <span className="text-red-400">*</span>
+          <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: '#64748b' }}>
+            Select Template <span style={{ color: '#ef4444' }}>*</span>
           </label>
           <select
             value={selectedTemplateName}
             onChange={(e) => setSelectedTemplateName(e.target.value)}
-            className="w-full p-2.5 bg-[#2a3942] border border-[#3b4f5a] rounded-xl text-[#e9edef] text-sm focus:outline-none focus:border-[#00A884] appearance-none cursor-pointer"
+            className="w-full p-2.5 rounded-xl text-sm focus:outline-none appearance-none cursor-pointer transition-all"
+            style={inputStyle}
+            onFocus={e => { e.currentTarget.style.borderColor = '#8b5cf6'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(139,92,246,0.15)'; }}
+            onBlur={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.boxShadow = 'none'; }}
             disabled={templatesLoading}
           >
             <option value="">
@@ -162,22 +171,25 @@ const BulkSendPanel: React.FC<BulkSendPanelProps> = ({ preSelectedTemplate }) =>
 
         {/* Phone Numbers Textarea */}
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1">
-            Phone Numbers <span className="text-red-400">*</span>
-            <span className="text-xs text-gray-500 ml-1">(one per line, max 50)</span>
+          <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: '#64748b' }}>
+            Phone Numbers <span style={{ color: '#ef4444' }}>*</span>
+            <span className="text-[10px] ml-1 font-normal normal-case" style={{ color: '#94a3b8' }}>(one per line, max 50)</span>
           </label>
           <textarea
             value={phoneNumbers}
             onChange={(e) => setPhoneNumbers(e.target.value)}
             placeholder={"+971501234567\n+971509876543\n+919876543210"}
-            className="w-full p-2.5 bg-[#2a3942] border border-[#3b4f5a] rounded-xl text-[#e9edef] text-sm focus:outline-none focus:border-[#00A884] placeholder-[#667781] h-32 resize-none font-mono"
+            className="w-full p-2.5 rounded-xl text-sm focus:outline-none h-32 resize-none font-mono transition-all"
+            style={inputStyle}
+            onFocus={e => { e.currentTarget.style.borderColor = '#8b5cf6'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(139,92,246,0.15)'; }}
+            onBlur={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.boxShadow = 'none'; }}
           />
           <div className="flex justify-between items-center mt-1">
-            <span className={`text-xs ${isOverLimit ? 'text-red-400' : 'text-[#667781]'}`}>
+            <span className="text-xs" style={{ color: isOverLimit ? '#ef4444' : '#94a3b8' }}>
               {phoneCount} / 50 numbers entered
             </span>
             {isOverLimit && (
-              <span className="text-xs text-red-400 font-medium">
+              <span className="text-xs font-medium" style={{ color: '#ef4444' }}>
                 Maximum 50 numbers per batch
               </span>
             )}
@@ -186,47 +198,56 @@ const BulkSendPanel: React.FC<BulkSendPanelProps> = ({ preSelectedTemplate }) =>
 
         {/* Language */}
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1">
+          <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: '#64748b' }}>
             Language
           </label>
           <input
             type="text"
             value={language}
             onChange={(e) => setLanguage(e.target.value)}
-            className="w-full p-2.5 bg-[#2a3942] border border-[#3b4f5a] rounded-xl text-[#e9edef] text-sm focus:outline-none focus:border-[#00A884]"
+            className="w-full p-2.5 rounded-xl text-sm focus:outline-none transition-all"
+            style={inputStyle}
+            onFocus={e => { e.currentTarget.style.borderColor = '#8b5cf6'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(139,92,246,0.15)'; }}
+            onBlur={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.boxShadow = 'none'; }}
             placeholder="en_US"
           />
         </div>
 
         {/* Header Image URL */}
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1">
+          <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: '#64748b' }}>
             Header Image URL
-            <span className="text-xs text-gray-500 ml-1">(if template has media header)</span>
+            <span className="text-[10px] ml-1 font-normal normal-case" style={{ color: '#94a3b8' }}>(if template has media header)</span>
           </label>
           <input
             type="text"
             value={headerImageUrl}
             onChange={(e) => setHeaderImageUrl(e.target.value)}
-            className="w-full p-2.5 bg-[#2a3942] border border-[#3b4f5a] rounded-xl text-[#e9edef] text-sm focus:outline-none focus:border-[#00A884]"
+            className="w-full p-2.5 rounded-xl text-sm focus:outline-none transition-all"
+            style={inputStyle}
+            onFocus={e => { e.currentTarget.style.borderColor = '#8b5cf6'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(139,92,246,0.15)'; }}
+            onBlur={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.boxShadow = 'none'; }}
             placeholder="https://example.com/logo.png"
           />
         </div>
 
         {/* Parameters */}
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1">
+          <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: '#64748b' }}>
             Parameters
-            <span className="text-xs text-gray-500 ml-1">(comma separated)</span>
+            <span className="text-[10px] ml-1 font-normal normal-case" style={{ color: '#94a3b8' }}>(comma separated)</span>
           </label>
           <input
             type="text"
             value={parameters}
             onChange={(e) => setParameters(e.target.value)}
-            className="w-full p-2.5 bg-[#2a3942] border border-[#3b4f5a] rounded-xl text-[#e9edef] text-sm focus:outline-none focus:border-[#00A884]"
+            className="w-full p-2.5 rounded-xl text-sm focus:outline-none transition-all"
+            style={inputStyle}
+            onFocus={e => { e.currentTarget.style.borderColor = '#8b5cf6'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(139,92,246,0.15)'; }}
+            onBlur={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.boxShadow = 'none'; }}
             placeholder="John, Order123"
           />
-          <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+          <p className="text-xs mt-1 flex items-center gap-1" style={{ color: '#94a3b8' }}>
             <span>ℹ️</span> These replace {'{{1}}'}, {'{{2}}'} in the template
           </p>
         </div>
@@ -235,11 +256,21 @@ const BulkSendPanel: React.FC<BulkSendPanelProps> = ({ preSelectedTemplate }) =>
         <motion.button
           onClick={handleSend}
           disabled={loading || !selectedTemplateName || phoneCount === 0 || isOverLimit}
-          className={`w-full py-3 rounded-xl font-medium text-sm text-white flex items-center justify-center gap-2 transition-colors ${
-            loading || !selectedTemplateName || phoneCount === 0 || isOverLimit
-              ? 'bg-[#2a3942] cursor-not-allowed opacity-60'
-              : 'bg-[#00A884] hover:bg-[#06cf9c]'
-          }`}
+          className="w-full py-3 rounded-xl font-medium text-sm text-white flex items-center justify-center gap-2 transition-all"
+          style={{
+            background: loading || !selectedTemplateName || phoneCount === 0 || isOverLimit
+              ? '#e2e8f0'
+              : 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+            color: loading || !selectedTemplateName || phoneCount === 0 || isOverLimit
+              ? '#94a3b8'
+              : '#ffffff',
+            boxShadow: loading || !selectedTemplateName || phoneCount === 0 || isOverLimit
+              ? 'none'
+              : '0 4px 14px rgba(124,58,237,0.25)',
+            cursor: loading || !selectedTemplateName || phoneCount === 0 || isOverLimit
+              ? 'not-allowed'
+              : 'pointer',
+          }}
           whileHover={!loading ? { scale: 1.02 } : {}}
           whileTap={!loading ? { scale: 0.98 } : {}}
         >
@@ -257,30 +288,31 @@ const BulkSendPanel: React.FC<BulkSendPanelProps> = ({ preSelectedTemplate }) =>
 
         {/* Error */}
         {error && (
-          <div className="bg-red-900/30 border border-red-800 rounded-lg p-3">
-            <p className="text-sm text-red-300">{error}</p>
+          <div className="rounded-xl p-3" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)' }}>
+            <p className="text-sm" style={{ color: '#ef4444' }}>{error}</p>
           </div>
         )}
 
         {/* Results */}
         {results && (
           <motion.div
-            className="bg-[#1f2c34] rounded-xl p-4 border border-[#2a3942] space-y-3"
+            className="rounded-xl p-4 space-y-3"
+            style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <h3 className="text-sm font-semibold text-[#e9edef]">Results</h3>
+            <h3 className="text-sm font-semibold" style={{ color: '#0f172a' }}>Results</h3>
 
             <div className="flex gap-4">
               <div className="flex items-center gap-1 text-sm">
-                <span className="text-emerald-400">✅</span>
-                <span className="text-gray-200">{results.success} sent successfully</span>
+                <span>✅</span>
+                <span style={{ color: '#0f172a' }}>{results.success} sent successfully</span>
               </div>
               {results.failed > 0 && (
                 <div className="flex items-center gap-1 text-sm">
-                  <span className="text-red-400">❌</span>
-                  <span className="text-gray-200">{results.failed} failed</span>
+                  <span>❌</span>
+                  <span style={{ color: '#0f172a' }}>{results.failed} failed</span>
                 </div>
               )}
             </div>
@@ -290,7 +322,8 @@ const BulkSendPanel: React.FC<BulkSendPanelProps> = ({ preSelectedTemplate }) =>
               <div>
                 <button
                   onClick={() => setShowFailed(!showFailed)}
-                  className="text-xs text-[#00A884] hover:text-[#06cf9c] flex items-center gap-1"
+                  className="text-xs flex items-center gap-1"
+                  style={{ color: '#8b5cf6' }}
                 >
                   <span className={`transform transition-transform ${showFailed ? 'rotate-90' : ''}`}>▶</span>
                   {showFailed ? 'Hide' : 'Show'} failed numbers
@@ -299,9 +332,9 @@ const BulkSendPanel: React.FC<BulkSendPanelProps> = ({ preSelectedTemplate }) =>
                 {showFailed && (
                   <div className="mt-2 space-y-1">
                     {failedResults.map((r, i) => (
-                      <div key={i} className="text-xs text-gray-400 flex items-center gap-2 pl-3">
-                        <span className="text-red-400 font-mono">{r.phone}</span>
-                        <span className="text-gray-600">—</span>
+                      <div key={i} className="text-xs flex items-center gap-2 pl-3" style={{ color: '#64748b' }}>
+                        <span className="font-mono" style={{ color: '#ef4444' }}>{r.phone}</span>
+                        <span style={{ color: '#cbd5e1' }}>—</span>
                         <span>{r.error || 'Unknown error'}</span>
                       </div>
                     ))}

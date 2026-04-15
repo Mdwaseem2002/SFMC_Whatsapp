@@ -250,25 +250,24 @@ export default function Home() {
   };
 
   return (
-    <main className="flex h-screen bg-[#0b141a]">
+    <main className="flex h-screen" style={{ background: '#f8fafc' }}>
       {/* Left side - 30% width */}
-      <div className="w-3/10 h-full flex flex-col border-r border-[#2a3942] bg-[#111B21]">
+      <div className="w-3/10 h-full flex flex-col border-r" style={{ borderColor: '#e2e8f0', background: '#ffffff' }}>
         {/* WhatsApp logo and config */}
-        <div className="px-4 py-3 flex justify-between items-center bg-[#1f2c34] border-b border-[#2a3942]">
-          <div className="flex items-center">
-            <Image 
-              src="/image-removebg-preview (21).png" 
-              alt="WhatsApp Logo" 
-              width={40} 
-              height={40} 
-              className="mr-2.5"
-            />
-            <h1 className="text-[17px] font-semibold text-[#e9edef]">WhatsZapp</h1>
+        <div className="px-4 py-3.5 flex justify-between items-center border-b" style={{ background: 'rgba(255,255,255,0.85)', borderColor: '#e2e8f0', backdropFilter: 'blur(12px)' }}>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #8b5cf6, #c084fc)', boxShadow: '0 4px 12px rgba(139,92,246,0.3)' }}>
+              <span className="text-white text-base">💬</span>
+            </div>
+            <h1 className="text-[17px] font-semibold" style={{ color: '#0f172a', letterSpacing: '-0.3px' }}>WhatsZapp</h1>
           </div>
           {isConfigured ? (
             <button 
               onClick={() => setIsConfigured(false)}
-              className="text-[#8696a0] hover:text-[#e9edef] p-2 rounded-full hover:bg-[#2a3942] transition-colors"
+              className="p-2 rounded-xl transition-all duration-200"
+              style={{ color: '#64748b' }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(139,92,246,0.1)'; e.currentTarget.style.color = '#8b5cf6'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#64748b'; }}
             >
               <FaCog size={16} />
             </button>
@@ -281,22 +280,19 @@ export default function Home() {
         ) : (
           <>
             {/* Tab Navigation */}
-            <div className="flex bg-[#1f2c34] border-b border-[#2a3942]">
+            <div className="flex border-b" style={{ background: '#ffffff', borderColor: '#e2e8f0' }}>
               {tabs.map((tab) => (
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors relative ${
-                    activeTab === tab.key
-                      ? 'text-[#e9edef]'
-                      : 'text-[#8696a0] hover:text-[#e9edef]'
-                  }`}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-medium transition-all duration-200 relative"
+                  style={{ color: activeTab === tab.key ? '#8b5cf6' : '#94a3b8' }}
                 >
                   <span className="text-sm">{tab.icon}</span>
                   <span>{tab.label}</span>
                   {/* Active indicator bar */}
                   {activeTab === tab.key && (
-                    <span className="absolute bottom-0 left-1/4 right-1/4 h-0.5 bg-[#00A884] rounded-full" />
+                    <span className="absolute bottom-0 left-1/4 right-1/4 h-0.5 rounded-full" style={{ background: 'linear-gradient(90deg, #8b5cf6, #c084fc)' }} />
                   )}
                 </button>
               ))}
@@ -305,10 +301,13 @@ export default function Home() {
             {/* Tab Content */}
             {activeTab === 'chats' && (
               <>
-                <div className="px-3 pt-3 pb-2 bg-[#111B21]">
+                <div className="px-3 pt-3 pb-2" style={{ background: '#ffffff' }}>
                   <button 
                     onClick={() => setShowAddModal(true)}
-                    className="w-full bg-[#00A884] hover:bg-[#06cf9c] text-white py-2.5 rounded-xl font-medium transition-colors text-sm flex items-center justify-center gap-2"
+                    className="w-full py-2.5 rounded-xl font-medium transition-all duration-200 text-sm flex items-center justify-center gap-2 text-white"
+                    style={{ background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)', boxShadow: '0 4px 14px rgba(124,58,237,0.25)' }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(124,58,237,0.3)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(124,58,237,0.25)'; }}
                   >
                     <UserPlus size={16} />
                     Add Recipient
@@ -337,7 +336,7 @@ export default function Home() {
       </div>
 
       {/* Right side - 70% width */}
-      <div className="w-7/10 h-full flex flex-col bg-[#0b141a]">
+      <div className="w-7/10 h-full flex flex-col" style={{ background: '#f8fafc' }}>
         {selectedContact ? (
           <ChatWindow 
             contact={selectedContact}
@@ -348,16 +347,12 @@ export default function Home() {
           />
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center">
-            <Image 
-              src="/image-removebg-preview (22).png"
-              alt="WhatsZapp" 
-              width={180} 
-              height={180} 
-              className="opacity-30 mb-5"
-            />
-            <p className="text-[#e9edef] text-lg font-light">WhatsZapp for Business</p>
-            <p className="text-[#8696a0] text-sm mt-1">Select a chat to start messaging</p>
-            <div className="mt-4 w-16 h-[1px] bg-[#2a3942]"></div>
+            <div className="w-20 h-20 rounded-2xl flex items-center justify-center mb-5" style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.1), rgba(192,132,252,0.1))', border: '1px solid rgba(139,92,246,0.15)' }}>
+              <span className="text-4xl opacity-60">💬</span>
+            </div>
+            <p className="text-lg font-semibold" style={{ color: '#0f172a' }}>WhatsZapp for Business</p>
+            <p className="text-sm mt-1" style={{ color: '#64748b' }}>Select a chat to start messaging</p>
+            <div className="mt-4 w-16 h-[1px]" style={{ background: 'linear-gradient(90deg, transparent, #e2e8f0, transparent)' }}></div>
           </div>
         )}
       </div>
