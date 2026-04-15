@@ -25,6 +25,10 @@ const ConversationSchema = new mongoose.Schema({
   isOptedOut: {
     type: Boolean,
     default: false
+  },
+  hasReceivedWelcomeMsg: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true

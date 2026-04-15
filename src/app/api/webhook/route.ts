@@ -224,6 +224,38 @@ export async function POST(request: Request) {
                         })
                       }).catch(e => console.error('[webhook] Failed to send opt-out confirm', e));
                     }
+                  } else {
+                    // ---- First-time Welcome Message processing ----
+                    const conversation = await Conversation.findOne({ phoneNumber: message.from });
+                    if (conversation && !conversation.hasReceivedWelcomeMsg) {
+                      console.log(`[webhook] First time message from ${message.from}. Sending Welcome auto-reply.`);
+                      
+                      // 1. Mark as received so we only send it once
+                      await Conversation.findOneAndUpdate(
+                        { phoneNumber: message.from },
+                        { hasReceivedWelcomeMsg: true }
+                      );
+
+                      // 2. Send automated WhatsApp Welcome reply
+                      const ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
+                      const PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID;
+                      if (ACCESS_TOKEN && PHONE_NUMBER_ID) {
+                        const welcomeMsg = "Thank you for reaching out to Pentacloud Consulting! A member of our team will be with you shortly.";
+                        await fetch(`https://graph.facebook.com/v25.0/${PHONE_NUMBER_ID}/messages`, {
+                          method: 'POST',
+                          headers: {
+                            'Authorization': `Bearer ${ACCESS_TOKEN}`,
+                            'Content-Type': 'application/json'
+                          },
+                          body: JSON.stringify({
+                            messaging_product: "whatsapp",
+                            to: message.from,
+                            type: "text",
+                            text: { body: welcomeMsg }
+                          })
+                        }).catch(e => console.error('[webhook] Failed to send welcome auto-reply', e));
+                      }
+                    }
                   }
 
                 } catch (sfmcError) {
