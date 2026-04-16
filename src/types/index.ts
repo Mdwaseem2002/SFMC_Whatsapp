@@ -28,7 +28,7 @@ export interface Contact {
     status: MessageStatus;
     recipientId: string;
     mediaUrl?: string;
-    mediaType?: 'image' | 'audio' | 'video' | 'document' | 'text';
+    mediaType?: 'image' | 'audio' | 'video' | 'document' | 'text' | 'sticker';
     mediaId?: string;
     mimeType?: string;
     filename?: string;
