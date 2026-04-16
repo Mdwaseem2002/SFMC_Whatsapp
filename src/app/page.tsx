@@ -113,7 +113,8 @@ export default function Home() {
               currentContacts.push({
                 id: conv._id.toString(),
                 name: conv.contactName || normPhone,
-                phoneNumber: normPhone
+                phoneNumber: normPhone,
+                online: undefined
               });
               updatedContacts = true;
             }
