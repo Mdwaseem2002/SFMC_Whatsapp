@@ -9,7 +9,7 @@ const MessageSchema = new mongoose.Schema({
     index: true,
     unique: true 
   },
-  content: { type: String, required: true },
+  content: { type: String, required: false, default: '' },
   timestamp: { type: Date, default: Date.now },
   sender: { type: String, enum: ['user', 'contact'], required: true },
   status: { 
@@ -20,7 +20,12 @@ const MessageSchema = new mongoose.Schema({
   recipientId: { type: String, required: true },
   contactPhoneNumber: { type: String, required: true },
   conversationId: { type: String, required: true },
-  originalId: { type: String }
+  originalId: { type: String },
+  mediaType: { type: String, enum: ['image', 'video', 'document', 'audio', 'text'], default: 'text' },
+  mediaId: { type: String },
+  mimeType: { type: String },
+  filename: { type: String },
+  caption: { type: String }
 }, {
   timestamps: true
 });

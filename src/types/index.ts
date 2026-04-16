@@ -28,8 +28,12 @@ export interface Contact {
     status: MessageStatus;
     recipientId: string;
     mediaUrl?: string;
-    mediaType?: 'image' | 'audio' | 'video' | 'document';
-    contactPhoneNumber?: string; // Add this field
+    mediaType?: 'image' | 'audio' | 'video' | 'document' | 'text';
+    mediaId?: string;
+    mimeType?: string;
+    filename?: string;
+    caption?: string;
+    contactPhoneNumber?: string;
     conversationId?: string;
     originalId?: string;
   }
@@ -119,6 +123,11 @@ export interface Contact {
     timestamp: string;
     sender: 'user' | 'contact';
     status: MessageStatus;
+    mediaType?: 'image' | 'audio' | 'video' | 'document' | 'text' | 'sticker';
+    mediaId?: string;
+    mimeType?: string;
+    filename?: string;
+    caption?: string;
   }
   
   export interface Contact {

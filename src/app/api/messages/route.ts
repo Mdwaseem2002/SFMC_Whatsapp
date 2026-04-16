@@ -62,6 +62,11 @@ export async function POST(request: Request) {
         contactPhoneNumber: normalizedPhone,
         originalId: message.id,
         conversationId: normalizedPhone,
+        mediaType: message.mediaType || 'text',
+        mediaId: message.mediaId,
+        mimeType: message.mimeType,
+        filename: message.filename,
+        caption: message.caption,
       };
 
       try {
@@ -173,7 +178,12 @@ export async function GET(request: Request) {
         timestamp: 1, 
         sender: 1,
         status: 1,
-        conversationId: 1
+        conversationId: 1,
+        mediaType: 1,
+        mediaId: 1,
+        mimeType: 1,
+        filename: 1,
+        caption: 1
       };
 
       // Retrieve messages with optimized query

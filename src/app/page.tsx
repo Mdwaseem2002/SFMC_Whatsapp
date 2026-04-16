@@ -46,7 +46,7 @@ export default function Home() {
   });
   const [activeTab, setActiveTab] = useState<SidebarTab>('chats');
   const [preSelectedTemplate, setPreSelectedTemplate] = useState<TemplateForBulk | null>(null);
-  
+
   // Global notification system
   const selectedPhoneNormalized = selectedContact ? normalizePhone(selectedContact.phoneNumber) : null;
   const {
@@ -56,7 +56,7 @@ export default function Home() {
     dismissNotification,
     incomingMessageEvent,
   } = useGlobalNotifications(selectedPhoneNormalized);
-  
+
   // Real-time synchronization for unselected chats and background updates
   useEffect(() => {
     if (incomingMessageEvent) {
@@ -80,7 +80,7 @@ export default function Home() {
     }
   }, [incomingMessageEvent]);
 
-  // Load config from localStorage on component mount
+  // Load config and hydrate chats from MongoDB on component mount
   useEffect(() => {
     const savedConfig = localStorage.getItem('whatsappConfig');
     if (savedConfig) {
@@ -90,11 +90,66 @@ export default function Home() {
     }
 
     const savedContacts = localStorage.getItem('whatsappContacts');
+    let localContacts: Contact[] = [];
     if (savedContacts) {
-      setContacts(JSON.parse(savedContacts));
+      localContacts = JSON.parse(savedContacts);
+      setContacts(localContacts);
     }
 
-    // Note: We no longer load messages from localStorage — MongoDB is the source of truth
+    // Hydrate conversations from backend for instant ChatList preview
+    fetch('/api/conversations')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.conversations) {
+          const initialMessages: Record<string, Message[]> = {};
+          let currentContacts = [...localContacts];
+          let updatedContacts = false;
+
+          data.conversations.forEach((conv: any) => {
+            const normPhone = normalizePhone(conv.phoneNumber);
+
+            // If contact doesn't exist locally, merge it from backend
+            if (!currentContacts.find(c => normalizePhone(c.phoneNumber) === normPhone)) {
+              currentContacts.push({
+                id: conv._id.toString(),
+                name: conv.contactName || normPhone,
+                phoneNumber: normPhone
+              });
+              updatedContacts = true;
+            }
+
+            // Hydrate the last message preview
+            if (conv.lastMessage) {
+              initialMessages[normPhone] = [{
+                id: 'preview-' + conv._id,
+                content: conv.lastMessage,
+                timestamp: conv.lastMessageTimestamp,
+                sender: 'contact',
+                status: MessageStatus.DELIVERED,
+                recipientId: normPhone,
+                attachments: false
+              }];
+            }
+          });
+
+          if (updatedContacts) {
+            setContacts(currentContacts); // This will trigger the localStorage save effect automatically
+          }
+
+          // Prehydrate the message strings — this resolves the "No messages yet" on page load
+          setMessages(prev => {
+            const merged = { ...initialMessages };
+            // Ensure we don't accidentally overwrite fully loaded chats if React StrictMode fires twice
+            Object.keys(prev).forEach(key => {
+              if (prev[key] && prev[key].length > 1) {
+                merged[key] = prev[key];
+              }
+            });
+            return merged;
+          });
+        }
+      })
+      .catch(err => console.error('Failed to hydrate conversations:', err));
   }, []);
 
   // Update the messages state when real-time messages change
@@ -102,12 +157,12 @@ export default function Home() {
   useEffect(() => {
     if (selectedContact && realtimeMessages.length > 0) {
       const key = normalizePhone(selectedContact.phoneNumber);
-      
+
       // Prevent stale messages from another contact overwriting the new contact's key
       if (realtimeMessagesPhone && realtimeMessagesPhone !== key) {
-        return; 
+        return;
       }
-      
+
       setMessages(prev => ({
         ...prev,
         [key]: realtimeMessages
@@ -188,7 +243,7 @@ export default function Home() {
     setMessages(prev => {
       const contactMessages = prev[key] || [];
       const updatedMessages = [...contactMessages, newMessage];
-      
+
       // Also store message on the server
       fetch('/api/messages', {
         method: 'POST',
@@ -235,7 +290,7 @@ export default function Home() {
 
       // Update message status to sent
       setMessages(prev => {
-        const contactMessages = (prev[key] || []).map(msg => 
+        const contactMessages = (prev[key] || []).map(msg =>
           msg.id === newMessage.id ? { ...msg, status: MessageStatus.SENT } : msg
         );
         return {
@@ -247,7 +302,7 @@ export default function Home() {
       console.error('Error sending message:', error);
       // Update message status to failed
       setMessages(prev => {
-        const contactMessages = (prev[key] || []).map(msg => 
+        const contactMessages = (prev[key] || []).map(msg =>
           msg.id === newMessage.id ? { ...msg, status: MessageStatus.FAILED } : msg
         );
         return {
@@ -311,7 +366,7 @@ export default function Home() {
             <h1 className="text-[17px] font-semibold" style={{ color: '#0f172a', letterSpacing: '-0.3px' }}>WhatsZapp</h1>
           </div>
           {isConfigured ? (
-            <button 
+            <button
               onClick={() => setIsConfigured(false)}
               className="p-2 rounded-xl transition-all duration-200"
               style={{ color: '#64748b' }}
@@ -351,7 +406,7 @@ export default function Home() {
             {activeTab === 'chats' && (
               <>
                 <div className="px-3 pt-3 pb-2" style={{ background: '#ffffff' }}>
-                  <button 
+                  <button
                     onClick={() => setShowAddModal(true)}
                     className="w-full py-2.5 rounded-xl font-medium transition-all duration-200 text-sm flex items-center justify-center gap-2 text-white"
                     style={{ background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)', boxShadow: '0 4px 14px rgba(124,58,237,0.25)' }}
@@ -362,8 +417,8 @@ export default function Home() {
                     Add Recipient
                   </button>
                 </div>
-                <ChatList 
-                  contacts={contacts} 
+                <ChatList
+                  contacts={contacts}
                   selectedContact={selectedContact}
                   onSelectContact={handleContactSelect}
                   onEditContact={handleEditContact}
@@ -388,7 +443,7 @@ export default function Home() {
       {/* Right side - 70% width */}
       <div className="w-7/10 h-full flex flex-col" style={{ background: '#f8fafc' }}>
         {selectedContact ? (
-          <ChatWindow 
+          <ChatWindow
             contact={selectedContact}
             messages={getContactMessages(selectedContact.phoneNumber)}
             onSendMessage={sendMessage}
@@ -409,9 +464,9 @@ export default function Home() {
 
       {/* Add Recipient Modal */}
       {showAddModal && (
-        <AddRecipientModal 
-          onAdd={handleAddContact} 
-          onClose={() => setShowAddModal(false)} 
+        <AddRecipientModal
+          onAdd={handleAddContact}
+          onClose={() => setShowAddModal(false)}
         />
       )}
 

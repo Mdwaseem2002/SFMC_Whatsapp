@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Send, ChevronLeft, MoreVertical, Search, Paperclip, Mic, Phone, Video } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Send, ChevronLeft, MoreVertical, Search, Paperclip, Mic, Phone, Video, Zap, X, FileText, Download } from 'lucide-react';
 import { Contact, Message, MessageStatus } from '@/types';
 
 interface ChatWindowProps {
@@ -67,6 +67,24 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
+  const [showFastReplies, setShowFastReplies] = useState(false);
+  const [fastReplies, setFastReplies] = useState<{ id: string; shortcut: string; message: string }[]>([]);
+
+  const handleToggleFastReplies = () => {
+    if (!showFastReplies) {
+      const saved = localStorage.getItem('fastReplies');
+      if (saved) {
+        try {
+          setFastReplies(JSON.parse(saved));
+        } catch (e) {
+          console.error('Error parsing fast replies', e);
+        }
+      } else {
+        setFastReplies([]);
+      }
+    }
+    setShowFastReplies(!showFastReplies);
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -253,9 +271,71 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                     >
                       {/* Message content */}
                       <div className="break-words">
-                        <span className="text-[13.5px] leading-[19px]" style={{ color: isSent ? '#ffffff' : '#0f172a' }}>
-                          {message.content}
-                        </span>
+                        {(!message.mediaType || message.mediaType === 'text') && (
+                          <span className="text-[13.5px] leading-[19px]" style={{ color: isSent ? '#ffffff' : '#0f172a' }}>
+                            {message.content}
+                          </span>
+                        )}
+                        {(message.mediaType === 'image' || message.mediaType === 'sticker') && message.mediaId && (
+                          <div className="flex flex-col gap-1 max-w-[280px]">
+                            <img 
+                              src={`/api/media?mediaId=${message.mediaId}`} 
+                              alt={message.caption || "Image"} 
+                              className="rounded-lg object-cover w-full cursor-pointer hover:opacity-95 transition-opacity bg-slate-100" 
+                              style={{ minHeight: '120px' }}
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                const fallback = target.nextElementSibling as HTMLElement;
+                                if (fallback) fallback.style.display = 'flex';
+                              }}
+                            />
+                            <div className="items-center justify-center rounded-lg p-4" style={{ display: 'none', background: isSent ? 'rgba(255,255,255,0.1)' : '#f1f5f9', minHeight: '80px' }}>
+                              <span className="text-xs" style={{ color: isSent ? 'rgba(255,255,255,0.7)' : '#64748b' }}>📷 Media unavailable</span>
+                            </div>
+                            {message.caption && <span className="text-[13.5px] leading-[19px] mt-1" style={{ color: isSent ? '#ffffff' : '#0f172a' }}>{message.caption}</span>}
+                          </div>
+                        )}
+                        {message.mediaType === 'video' && message.mediaId && (
+                          <div className="flex flex-col gap-1 max-w-[280px]">
+                            <video src={`/api/media?mediaId=${message.mediaId}`} controls className="rounded-lg w-full bg-slate-900" style={{ minHeight: '120px' }} />
+                            {message.caption && <span className="text-[13.5px] leading-[19px] mt-1" style={{ color: isSent ? '#ffffff' : '#0f172a' }}>{message.caption}</span>}
+                          </div>
+                        )}
+                        {message.mediaType === 'audio' && message.mediaId && (
+                          <div className="flex flex-col gap-1 w-[240px] mt-1">
+                            <audio src={`/api/media?mediaId=${message.mediaId}`} controls className="w-full h-10" />
+                          </div>
+                        )}
+                        {message.mediaType === 'document' && message.mediaId && (
+                          <div className="flex flex-col gap-1 max-w-[280px]">
+                            <div className="flex items-center gap-3 p-3 rounded-lg" style={{ background: isSent ? 'rgba(255,255,255,0.1)' : '#f8fafc', border: isSent ? '1px solid rgba(255,255,255,0.2)' : '1px solid #e2e8f0' }}>
+                              <div className="p-2 rounded-full" style={{ background: isSent ? 'rgba(255,255,255,0.2)' : '#e2e8f0' }}>
+                                <FileText size={18} style={{ color: isSent ? '#ffffff' : '#475569' }} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-[13px] font-semibold truncate" style={{ color: isSent ? '#ffffff' : '#0f172a' }}>{message.filename || 'Document'}</p>
+                                <p className="text-[10px] truncate" style={{ color: isSent ? 'rgba(255,255,255,0.7)' : '#64748b' }}>{message.mimeType || 'file'}</p>
+                              </div>
+                              <a 
+                                href={`/api/media?mediaId=${message.mediaId}&download=true`} 
+                                download 
+                                className="p-1.5 rounded-full transition-colors flex-shrink-0"
+                                style={{ background: isSent ? 'rgba(255,255,255,0.2)' : '#e0e7ff', color: isSent ? '#ffffff' : '#6366f1' }}
+                                aria-label="Download Document"
+                              >
+                                <Download size={14} />
+                              </a>
+                            </div>
+                            {message.caption && <span className="text-[13.5px] leading-[19px] mt-1" style={{ color: isSent ? '#ffffff' : '#0f172a' }}>{message.caption}</span>}
+                          </div>
+                        )}
+                        {/* Debug fallback: show media type if not rendered by any block above */}
+                        {message.mediaType && message.mediaType !== 'text' && !message.mediaId && (
+                          <div className="flex items-center gap-2 p-2 rounded-lg" style={{ background: isSent ? 'rgba(255,255,255,0.1)' : '#fef3c7', border: '1px solid #fcd34d' }}>
+                            <span className="text-xs" style={{ color: '#92400e' }}>⚠️ [{message.mediaType}] — mediaId missing</span>
+                          </div>
+                        )}
                         <span className="inline-flex items-end ml-1 float-right mt-[3px] pl-1 gap-[3px]">
                           <span className="text-[11px] leading-none" style={{ color: isSent ? 'rgba(255,255,255,0.6)' : '#94a3b8' }}>
                             {mounted ? formatMessageTime(message.timestamp) : ''}
@@ -301,7 +381,54 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       )}
 
       {/* ─── Message Input ─── */}
-      <div className="px-3 py-2.5 flex items-center gap-2 border-t" style={{ background: '#ffffff', borderColor: '#e2e8f0' }}>
+      <div className="px-3 py-2.5 flex items-center gap-2 border-t relative" style={{ background: '#ffffff', borderColor: '#e2e8f0' }}>
+
+        {/* --- Fast Replies Popover --- */}
+        <AnimatePresence>
+          {showFastReplies && (
+            <motion.div 
+              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.95 }}
+              className="absolute bottom-[calc(100%+8px)] right-16 mb-1 w-64 bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border overflow-hidden z-50 flex flex-col"
+              style={{ borderColor: '#e2e8f0', maxHeight: '300px' }}
+            >
+              <div className="px-3 py-2 border-b bg-slate-50 border-slate-100 flex justify-between items-center">
+                <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider">Fast Replies</span>
+                <button 
+                  onClick={() => setShowFastReplies(false)}
+                  className="text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+              <div className="overflow-y-auto flex-1">
+                {fastReplies.length === 0 ? (
+                  <div className="p-4 text-center">
+                    <p className="text-xs text-slate-500">No fast replies yet.</p>
+                    <p className="text-[10px] text-slate-400 mt-1">Add them in Settings</p>
+                  </div>
+                ) : (
+                  fastReplies.map(reply => (
+                    <button
+                      key={reply.id}
+                      className="w-full text-left p-3 hover:bg-slate-50 border-b border-slate-100 last:border-0 transition-colors"
+                      onClick={() => {
+                        setNewMessage(reply.message);
+                        setShowFastReplies(false);
+                        inputRef.current?.focus();
+                      }}
+                    >
+                      <span className="block text-[11px] font-bold text-violet-500 mb-0.5">{reply.shortcut}</span>
+                      <span className="block text-xs text-slate-600 line-clamp-2 leading-relaxed">{reply.message}</span>
+                    </button>
+                  ))
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <div className="flex-1 flex items-center rounded-xl px-2 min-h-[44px]" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
           <button 
             className="p-1.5 transition-colors rounded-full"
@@ -338,8 +465,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             />
           </form>
           
-          <button className="p-1.5 transition-colors rounded-full" style={{ color: '#94a3b8' }}>
-            <Mic size={18} />
+          <button 
+            type="button"
+            className="p-1.5 transition-colors rounded-full relative group" 
+            style={{ color: showFastReplies ? '#8b5cf6' : '#94a3b8' }}
+            onClick={handleToggleFastReplies}
+          >
+            <Zap size={18} className={showFastReplies ? "fill-violet-100" : ""} />
+            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-800 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">Fast Replies</span>
           </button>
         </div>
         

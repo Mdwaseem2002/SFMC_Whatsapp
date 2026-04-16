@@ -122,12 +122,56 @@ export async function POST(request: Request) {
         const messages = value.messages as Array<Record<string, unknown>> | undefined;
         if (messages && Array.isArray(messages)) {
           for (const message of messages) {
-            console.log("[webhook] Processing Message:", JSON.stringify(message, null, 2));
+            console.log("[webhook] ===== INBOUND MESSAGE =====");
+            console.log("[webhook] Type:", message.type, "| From:", message.from, "| ID:", message.id);
+            console.log("[webhook] Full payload:", JSON.stringify(message, null, 2));
 
-            if (message.type === "text" && message.text) {
+            if (["text", "image", "video", "document", "audio", "sticker"].includes(message.type as string)) {
               try {
                 const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-                const textObj = message.text as Record<string, string>;
+                
+                // Dynamic Media Extraction
+                let contentText = '';
+                let mediaType: string | undefined = undefined;
+                let mediaId: string | undefined = undefined;
+                let mimeType: string | undefined = undefined;
+                let filename: string | undefined = undefined;
+                let caption: string | undefined = undefined;
+
+                if (message.type === "text") {
+                  contentText = (message.text as Record<string, string>)?.body || '';
+                } else {
+                  // For sticker, treat as image
+                  const actualType = message.type === 'sticker' ? 'sticker' : message.type as string;
+                  mediaType = actualType === 'sticker' ? 'image' : actualType;
+                  const mediaObj = message[actualType] as Record<string, string>;
+                  mediaId = mediaObj?.id;
+                  mimeType = mediaObj?.mime_type;
+                  caption = mediaObj?.caption;
+                  filename = mediaObj?.filename;
+                  
+                  console.log("[webhook] Media extracted -> mediaType:", mediaType, "| mediaId:", mediaId, "| mimeType:", mimeType);
+                  
+                  if (caption) {
+                    contentText = caption;
+                  } else {
+                    if (message.type === 'document') contentText = `[Document: ${filename || 'file'}]`;
+                    else if (message.type === 'sticker') contentText = '[Sticker]';
+                    else contentText = `[${(message.type as string).charAt(0).toUpperCase() + (message.type as string).slice(1)}]`;
+                  }
+                }
+
+                const finalMessageObj = {
+                  ...message,
+                  text: { body: contentText },
+                  from: 'contact',
+                  content: contentText,
+                  mediaType,
+                  mediaId,
+                  mimeType,
+                  filename,
+                  caption
+                };
                 
                 const storeResponse = await fetch(
                   `${appUrl}/api/messages`,
@@ -138,12 +182,7 @@ export async function POST(request: Request) {
                     },
                     body: JSON.stringify({
                       phoneNumber: message.from,
-                      message: {
-                        ...message,
-                        text: { body: textObj.body },
-                        from: 'contact',
-                        content: textObj.body,
-                      },
+                      message: finalMessageObj,
                     }),
                   }
                 );
@@ -195,7 +234,6 @@ export async function POST(request: Request) {
                     contactName = profile?.name || '';
                   }
 
-                  const textObj = message.text as Record<string, string>;
                   const msgTimestamp = message.timestamp
                     ? new Date(Number(message.timestamp) * 1000).toISOString()
                     : new Date().toISOString();
@@ -205,13 +243,13 @@ export async function POST(request: Request) {
                     Phone: message.from as string,
                     ContactName: contactName,
                     MessageType: message.type as string || 'text',
-                    MessageContent: textObj?.body || '',
+                    MessageContent: contentText || '',
                     ReceivedTime: msgTimestamp,
                   });
 
                   // ---- Opt-Out Processing (STOP keywords) ----
-                  const bodyText = textObj?.body?.trim().toLowerCase() || '';
-                  if (/^(stop|unsubscribe|cancel|quit|end)$/.test(bodyText)) {
+                  const bodyText = contentText?.trim().toLowerCase() || '';
+                  if (/^(stop|unsubscribe|cancel|quit|end)$/.test(bodyText) && message.type === 'text') {
                     console.log(`[webhook] Opt-Out keyword detected from ${message.from}. Marking as unsubscribed.`);
                     
                     // 1. Write to SFMC WhatsApp_OptOuts DE
