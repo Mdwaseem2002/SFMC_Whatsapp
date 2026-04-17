@@ -21,11 +21,12 @@ const MessageSchema = new mongoose.Schema({
   contactPhoneNumber: { type: String, required: true },
   conversationId: { type: String, required: true },
   originalId: { type: String },
-  mediaType: { type: String, enum: ['image', 'video', 'document', 'audio', 'text'], default: 'text' },
+  mediaType: { type: String, enum: ['image', 'video', 'document', 'audio', 'text', 'sticker'], default: 'text' },
   mediaId: { type: String },
   mimeType: { type: String },
   filename: { type: String },
-  caption: { type: String }
+  caption: { type: String },
+  mediaData: { type: String } // base64-encoded binary, cached on arrival so media survives Meta expiry
 }, {
   timestamps: true
 });

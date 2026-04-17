@@ -164,8 +164,16 @@ export async function GET(request: Request) {
       
       const normalizedConversationId = conversationId.replace(/^\+/, '');
 
-      // Build optimized query with optional timestamp filter
-      const query: Record<string, unknown> = { conversationId: normalizedConversationId };
+      // Build robust query that matches on any phone-related field 
+      // This ensures old messages stored before conversationId was added are still found
+      const phoneQuery = {
+        $or: [
+          { conversationId: normalizedConversationId },
+          { contactPhoneNumber: normalizedConversationId },
+          { recipientId: normalizedConversationId }
+        ]
+      };
+      const query: Record<string, unknown> = { ...phoneQuery };
       if (afterTimestamp) {
         query.timestamp = { $gt: new Date(afterTimestamp).toISOString() };
       }

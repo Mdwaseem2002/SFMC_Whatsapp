@@ -38,7 +38,7 @@ export default function Home() {
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [messages, setMessages] = useState<Record<string, Message[]>>({});
   const { messages: realtimeMessages, phoneNumber: realtimeMessagesPhone } = useRealtimeMessages(selectedContact);
-  const [isConfigured, setIsConfigured] = useState(false);
+  const [isConfigured, setIsConfigured] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [config, setConfig] = useState({
     accessToken: '',
@@ -87,6 +87,20 @@ export default function Home() {
       const parsedConfig = JSON.parse(savedConfig);
       setConfig(parsedConfig);
       setIsConfigured(true);
+    } else {
+      // Auto-configure from env variables (server-side config)
+      // Always show chat view by default — settings only when user clicks gear
+      fetch('/api/get-env-variables')
+        .then(r => r.json())
+        .then(data => {
+          if (data.config?.accessToken && data.config?.phoneNumberId) {
+            const autoConfig = { accessToken: data.config.accessToken, phoneNumberId: data.config.phoneNumberId };
+            setConfig(autoConfig);
+            localStorage.setItem('whatsappConfig', JSON.stringify(autoConfig));
+            setIsConfigured(true);
+          }
+        })
+        .catch(() => { /* Keep chat view even if env check fails */ });
     }
 
     const savedContacts = localStorage.getItem('whatsappContacts');
@@ -366,17 +380,15 @@ export default function Home() {
             </div>
             <h1 className="text-[17px] font-semibold" style={{ color: '#0f172a', letterSpacing: '-0.3px' }}>WhatsZapp</h1>
           </div>
-          {isConfigured ? (
-            <button
-              onClick={() => setIsConfigured(false)}
-              className="p-2 rounded-xl transition-all duration-200"
-              style={{ color: '#64748b' }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(139,92,246,0.1)'; e.currentTarget.style.color = '#8b5cf6'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#64748b'; }}
-            >
-              <FaCog size={16} />
-            </button>
-          ) : null}
+          <button
+            onClick={() => setIsConfigured(prev => !prev)}
+            className="p-2 rounded-xl transition-all duration-200"
+            style={{ color: isConfigured ? '#64748b' : '#8b5cf6' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(139,92,246,0.1)'; e.currentTarget.style.color = '#8b5cf6'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = isConfigured ? '#64748b' : '#8b5cf6'; }}
+          >
+            <FaCog size={16} />
+          </button>
         </div>
 
         {/* WhatsApp Configuration or Tabbed Content */}

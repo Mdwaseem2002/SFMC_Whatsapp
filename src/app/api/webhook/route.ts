@@ -137,6 +137,7 @@ export async function POST(request: Request) {
                 let mimeType: string | undefined = undefined;
                 let filename: string | undefined = undefined;
                 let caption: string | undefined = undefined;
+                let mediaData: string | undefined = undefined;
 
                 if (message.type === "text") {
                   contentText = (message.text as Record<string, string>)?.body || '';
@@ -152,6 +153,40 @@ export async function POST(request: Request) {
                   
                   console.log("[webhook] Media extracted -> mediaType:", mediaType, "| mediaId:", mediaId, "| mimeType:", mimeType);
                   
+                  // === MEDIA CACHING: Download binary now so it survives Meta's 30-day expiry ===
+                  if (mediaId) {
+                    try {
+                      const ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
+                      if (ACCESS_TOKEN) {
+                        // Step 1: Get download URL from Meta Graph API
+                        const urlRes = await fetch(`https://graph.facebook.com/v19.0/${mediaId}`, {
+                          headers: { 'Authorization': `Bearer ${ACCESS_TOKEN}` }
+                        });
+                        if (urlRes.ok) {
+                          const urlData = await urlRes.json();
+                          if (urlData.url) {
+                            // Step 2: Download binary
+                            const binRes = await fetch(urlData.url, {
+                              headers: { 'Authorization': `Bearer ${ACCESS_TOKEN}` }
+                            });
+                            if (binRes.ok) {
+                              const arrayBuffer = await binRes.arrayBuffer();
+                              // Only cache if under 10MB to avoid MongoDB 16MB doc limit
+                              if (arrayBuffer.byteLength < 10 * 1024 * 1024) {
+                                mediaData = Buffer.from(arrayBuffer).toString('base64');
+                                console.log("[webhook] Media cached successfully:", mediaId, "size:", arrayBuffer.byteLength, "bytes");
+                              } else {
+                                console.log("[webhook] Media too large to cache:", arrayBuffer.byteLength, "bytes");
+                              }
+                            }
+                          }
+                        }
+                      }
+                    } catch (cacheErr) {
+                      console.error("[webhook] Media cache failed (non-fatal):", cacheErr);
+                    }
+                  }
+
                   if (caption) {
                     contentText = caption;
                   } else {
@@ -170,7 +205,8 @@ export async function POST(request: Request) {
                   mediaId,
                   mimeType,
                   filename,
-                  caption
+                  caption,
+                  mediaData
                 };
                 
                 const storeResponse = await fetch(
