@@ -479,15 +479,19 @@ export default function SignupPage() {
         </div>
 
         {/* Footer */}
-        <p style={{
+        <div style={{
           textAlign: 'center',
           marginTop: '24px',
           fontSize: '12px',
-          color: 'rgba(100,116,139,0.5)',
           fontFamily: "'Inter', sans-serif",
         }}>
-          © {new Date().getFullYear()} Pentacloud · Whatzupp for Business
-        </p>
+          <p style={{ color: 'rgba(100,116,139,0.5)', marginBottom: '4px' }}>
+            © {new Date().getFullYear()} Pentacloud · Whatzupp for Business
+          </p>
+          <Link href="/privacy" style={{ color: 'rgba(100,116,139,0.7)', textDecoration: 'none' }} onMouseEnter={(e) => { e.currentTarget.style.color = '#8b5cf6'; e.currentTarget.style.textDecoration = 'underline' }} onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(100,116,139,0.7)'; e.currentTarget.style.textDecoration = 'none' }}>
+            Privacy Policy
+          </Link>
+        </div>
       </div>
 
       {/* CSS Animations */}

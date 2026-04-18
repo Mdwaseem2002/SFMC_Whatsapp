@@ -5,6 +5,7 @@ import { getSessionFromRequest } from '@/lib/auth';
 const publicPaths = [
   '/login',
   '/signup',
+  '/privacy',
   '/api/auth',
   '/api/webhook',
   '/api/jb',
