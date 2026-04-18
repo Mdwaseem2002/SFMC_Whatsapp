@@ -1,9 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Enable standalone output for Hostinger/self-hosted deployment
-  output: 'standalone',
-  
   // Enable Server Components (default in Next.js 13+)
   reactStrictMode: true,
   

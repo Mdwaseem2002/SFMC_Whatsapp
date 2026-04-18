@@ -2,7 +2,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { UserPlus } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { UserPlus, LogOut } from 'lucide-react';
 import Image from 'next/image';
 import WhatsAppConfig from '@/components/WhatsAppConfig';
 import ChatList from '@/components/ChatList';
@@ -34,6 +35,7 @@ function normalizePhone(phone: string): string {
 }
 
 export default function Home() {
+  const router = useRouter();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [messages, setMessages] = useState<Record<string, Message[]>>({});
@@ -46,6 +48,8 @@ export default function Home() {
   });
   const [activeTab, setActiveTab] = useState<SidebarTab>('chats');
   const [preSelectedTemplate, setPreSelectedTemplate] = useState<TemplateForBulk | null>(null);
+  const [currentUser, setCurrentUser] = useState<{ name: string } | null>(null);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   // Global notification system
   const selectedPhoneNormalized = selectedContact ? normalizePhone(selectedContact.phoneNumber) : null;
@@ -79,6 +83,30 @@ export default function Home() {
       });
     }
   }, [incomingMessageEvent]);
+
+  // Fetch current user session
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then(r => r.json())
+      .then(data => {
+        if (data.authenticated) {
+          setCurrentUser({ name: data.user.name });
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Logout handler
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      router.push('/login');
+      router.refresh();
+    } catch {
+      setLoggingOut(false);
+    }
+  };
 
   // Load config and hydrate chats from MongoDB on component mount
   useEffect(() => {
@@ -378,8 +406,26 @@ export default function Home() {
             <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #8b5cf6, #c084fc)', boxShadow: '0 4px 12px rgba(139,92,246,0.3)' }}>
               <span className="text-white text-base">💬</span>
             </div>
-            <h1 className="text-[17px] font-semibold" style={{ color: '#0f172a', letterSpacing: '-0.3px' }}>WhatsZapp</h1>
+            <h1 className="text-[17px] font-semibold" style={{ color: '#0f172a', letterSpacing: '-0.3px' }}>Whatzupp</h1>
           </div>
+          <div className="flex items-center gap-2">
+            {currentUser && (
+              <span className="text-xs font-medium px-2 py-1 rounded-lg" style={{ color: '#64748b', background: 'rgba(139,92,246,0.08)' }}>
+                {currentUser.name}
+              </span>
+            )}
+            <button
+              id="logout-button"
+              onClick={handleLogout}
+              disabled={loggingOut}
+              className="p-2 rounded-xl transition-all duration-200"
+              style={{ color: '#64748b' }}
+              title="Logout"
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; e.currentTarget.style.color = '#ef4444'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#64748b'; }}
+            >
+              <LogOut size={16} />
+            </button>
           <button
             onClick={() => setIsConfigured(prev => !prev)}
             className="p-2 rounded-xl transition-all duration-200"
@@ -389,6 +435,7 @@ export default function Home() {
           >
             <FaCog size={16} />
           </button>
+          </div>
         </div>
 
         {/* WhatsApp Configuration or Tabbed Content */}
@@ -468,7 +515,7 @@ export default function Home() {
             <div className="w-20 h-20 rounded-2xl flex items-center justify-center mb-5" style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.1), rgba(192,132,252,0.1))', border: '1px solid rgba(139,92,246,0.15)' }}>
               <span className="text-4xl opacity-60">💬</span>
             </div>
-            <p className="text-lg font-semibold" style={{ color: '#0f172a' }}>WhatsZapp for Business</p>
+            <p className="text-lg font-semibold" style={{ color: '#0f172a' }}>Whatzupp for Business</p>
             <p className="text-sm mt-1" style={{ color: '#64748b' }}>Select a chat to start messaging</p>
             <div className="mt-4 w-16 h-[1px]" style={{ background: 'linear-gradient(90deg, transparent, #e2e8f0, transparent)' }}></div>
           </div>

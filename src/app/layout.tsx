@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "WhatsZapp for Business",
+  title: "Whatzupp for Business",
   description: "Pentacloud WhatsApp Business Platform",
 };
 
