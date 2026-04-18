@@ -30,8 +30,9 @@ interface TemplateForBulk {
 }
 
 // Helper: normalize phone number by stripping leading '+'
-function normalizePhone(phone: string): string {
-  return phone.replace(/^\+/, '');
+function normalizePhone(phone: string | undefined | null): string {
+  if (!phone) return '';
+  return String(phone).replace(/^\+/, '');
 }
 
 export default function Home() {

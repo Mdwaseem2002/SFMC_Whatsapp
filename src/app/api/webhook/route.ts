@@ -215,6 +215,7 @@ export async function POST(request: Request) {
                     method: "POST",
                     headers: {
                       "Content-Type": "application/json",
+                      "x-internal-secret": process.env.JWT_SECRET || 'fallback-secret',
                     },
                     body: JSON.stringify({
                       phoneNumber: message.from,
@@ -241,7 +242,10 @@ export async function POST(request: Request) {
                   // Per-phone SSE emit (existing)
                   await fetch(`${appUrl}/api/messages/stream`, {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: { 
+                      "Content-Type": "application/json",
+                      "x-internal-secret": process.env.JWT_SECRET || 'fallback-secret'
+                    },
                     body: JSON.stringify({
                       phoneNumber: normalizedPhone,
                       message: storeResult.message
@@ -251,7 +255,10 @@ export async function POST(request: Request) {
                   // Global notification SSE emit (NEW — for toasts, badges, browser notifications)
                   await fetch(`${appUrl}/api/messages/stream/global`, {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: { 
+                      "Content-Type": "application/json",
+                      "x-internal-secret": process.env.JWT_SECRET || 'fallback-secret'
+                    },
                     body: JSON.stringify({
                       phoneNumber: normalizedPhone,
                       message: storeResult.message,
@@ -447,7 +454,10 @@ export async function POST(request: Request) {
 
                 const sseResponse = await fetch(`${appUrl}/api/messages/stream`, {
                   method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
+                  headers: { 
+                    'Content-Type': 'application/json',
+                    "x-internal-secret": process.env.JWT_SECRET || 'fallback-secret'
+                  },
                   body: JSON.stringify({
                     phoneNumber: updatedMessage.contactPhoneNumber || updatedMessage.recipientId,
                     message: sseMessage

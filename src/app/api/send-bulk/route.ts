@@ -205,7 +205,10 @@ export async function POST(request: Request) {
               const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
               fetch(`${appUrl}/api/messages/stream`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                  'Content-Type': 'application/json',
+                  "x-internal-secret": process.env.JWT_SECRET || 'fallback-secret'
+                },
                 body: JSON.stringify({
                   phoneNumber: normalizedPhone,
                   message: messageData

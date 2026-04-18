@@ -8,6 +8,7 @@ const publicPaths = [
   '/api/auth',
   '/api/webhook',
   '/api/jb',
+  '/api/templates',
   '/api/send-whatsapp',
   '/_next',
   '/favicon.ico',
@@ -30,7 +31,9 @@ export async function middleware(request: NextRequest) {
   // Check session
   const session = await getSessionFromRequest(request);
 
-  if (!session) {
+  // Allow internal webhook requests that contain the secret
+  const internalSecret = request.headers.get('x-internal-secret');
+  if (!session && internalSecret !== (process.env.JWT_SECRET || 'fallback-secret')) {
     // For API routes, return 401
     if (pathname.startsWith('/api/')) {
       return NextResponse.json(
