@@ -12,6 +12,7 @@ interface ChatListProps {
   onDeleteContact: (contactId: string) => void;
   messages: Record<string, Message[]>;
   unreadCounts?: Record<string, number>;
+  onShowAddModal?: () => void;
 }
 
 const ChatList: React.FC<ChatListProps> = ({
@@ -21,7 +22,8 @@ const ChatList: React.FC<ChatListProps> = ({
   onEditContact,
   onDeleteContact,
   messages,
-  unreadCounts = {}
+  unreadCounts = {},
+  onShowAddModal
 }) => {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
@@ -93,14 +95,25 @@ const ChatList: React.FC<ChatListProps> = ({
       </div>
       
       {contacts.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-64 text-center p-6">
-          <div className="rounded-2xl p-5 mb-4" style={{ background: 'rgba(139,92,246,0.08)' }}>
+        <div className="flex flex-col items-center justify-center p-8 mt-10 text-center">
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5" style={{ background: 'rgba(139,92,246,0.08)' }}>
             <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="#8b5cf6">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
             </svg>
           </div>
-          <p className="text-sm" style={{ color: '#64748b' }}>No contacts yet.</p>
-          <p className="text-xs mt-1" style={{ color: '#94a3b8' }}>Add a recipient to start chatting.</p>
+          <h3 className="text-lg font-bold text-slate-700 mb-2">No data yet</h3>
+          <p className="text-xs mt-1 max-w-[200px]" style={{ color: '#94a3b8' }}>
+            There are no active chats. Start by adding a new recipient.
+          </p>
+          {onShowAddModal && (
+            <button
+              onClick={onShowAddModal}
+              className="mt-6 flex items-center justify-center px-4 py-2 text-sm font-semibold text-white rounded-lg transition-transform hover:-translate-y-0.5 w-full"
+              style={{ background: '#8b5cf6' }}
+            >
+              Add Recipient
+            </button>
+          )}
         </div>
       ) : (
         <div>

@@ -1,546 +1,194 @@
+import React from 'react';
+import Link from 'next/link';
+import { MessageSquare, Users2, BarChart3, Zap, Shield, Globe } from 'lucide-react';
 
-'use client';
-
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { UserPlus, LogOut } from 'lucide-react';
-import Image from 'next/image';
-import WhatsAppConfig from '@/components/WhatsAppConfig';
-import ChatList from '@/components/ChatList';
-import ChatWindow from '@/components/ChatWindow';
-import AddRecipientModal from '@/components/AddRecipientModel';
-import TemplatesPanel from '@/components/TemplatesPanel';
-import BulkSendPanel from '@/components/BulkSendPanel';
-import ToastNotification from '@/components/ToastNotification';
-import { useRealtimeMessages } from '@/app/hooks/useRealtimeMessages';
-import { useGlobalNotifications } from '@/app/hooks/useGlobalNotifications';
-
-import { Contact, Message, MessageStatus } from '@/types';
-import { FaCog } from "react-icons/fa";
-
-type SidebarTab = 'chats' | 'templates' | 'bulk';
-
-interface TemplateForBulk {
-  id: string;
-  name: string;
-  language: string;
-  category: string;
-  status: string;
-  components: Array<{ type: string; text?: string }>;
-}
-
-// Helper: normalize phone number by stripping leading '+'
-function normalizePhone(phone: string | undefined | null): string {
-  if (!phone) return '';
-  return String(phone).replace(/^\+/, '');
-}
-
-export default function Home() {
-  const router = useRouter();
-  const [contacts, setContacts] = useState<Contact[]>([]);
-  const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
-  const [messages, setMessages] = useState<Record<string, Message[]>>({});
-  const { messages: realtimeMessages, phoneNumber: realtimeMessagesPhone } = useRealtimeMessages(selectedContact);
-  const [isConfigured, setIsConfigured] = useState(true);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [config, setConfig] = useState({
-    accessToken: '',
-    phoneNumberId: ''
-  });
-  const [activeTab, setActiveTab] = useState<SidebarTab>('chats');
-  const [preSelectedTemplate, setPreSelectedTemplate] = useState<TemplateForBulk | null>(null);
-  const [currentUser, setCurrentUser] = useState<{ name: string } | null>(null);
-  const [loggingOut, setLoggingOut] = useState(false);
-
-  // Global notification system
-  const selectedPhoneNormalized = selectedContact ? normalizePhone(selectedContact.phoneNumber) : null;
-  const {
-    unreadCounts,
-    clearUnread,
-    latestNotification,
-    dismissNotification,
-    incomingMessageEvent,
-  } = useGlobalNotifications(selectedPhoneNormalized);
-
-  // Real-time synchronization for unselected chats and background updates
-  useEffect(() => {
-    if (incomingMessageEvent) {
-      const normPhone = normalizePhone(incomingMessageEvent.phoneNumber);
-      setMessages(prev => {
-        const contactMessages = prev[normPhone] || [];
-        // Prevent duplicate messages
-        if (contactMessages.some(m => m.id === incomingMessageEvent.message.id)) {
-          // If message exists, just update its status
-          return {
-            ...prev,
-            [normPhone]: contactMessages.map(m => m.id === incomingMessageEvent.message.id ? { ...m, ...incomingMessageEvent.message } : m)
-          };
-        }
-        // Add new message to the state so the ChatList updates instantly
-        return {
-          ...prev,
-          [normPhone]: [...contactMessages, incomingMessageEvent.message]
-        };
-      });
-    }
-  }, [incomingMessageEvent]);
-
-  // Fetch current user session
-  useEffect(() => {
-    fetch('/api/auth/me')
-      .then(r => r.json())
-      .then(data => {
-        if (data.authenticated) {
-          setCurrentUser({ name: data.user.name });
-        }
-      })
-      .catch(() => {});
-  }, []);
-
-  // Logout handler
-  const handleLogout = async () => {
-    setLoggingOut(true);
-    try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-      router.push('/login');
-      router.refresh();
-    } catch {
-      setLoggingOut(false);
-    }
-  };
-
-  // Load config and hydrate chats from MongoDB on component mount
-  useEffect(() => {
-    const savedConfig = localStorage.getItem('whatsappConfig');
-    if (savedConfig) {
-      const parsedConfig = JSON.parse(savedConfig);
-      setConfig(parsedConfig);
-      setIsConfigured(true);
-    } else {
-      // Auto-configure from env variables (server-side config)
-      // Always show chat view by default — settings only when user clicks gear
-      fetch('/api/get-env-variables')
-        .then(r => r.json())
-        .then(data => {
-          if (data.config?.accessToken && data.config?.phoneNumberId) {
-            const autoConfig = { accessToken: data.config.accessToken, phoneNumberId: data.config.phoneNumberId };
-            setConfig(autoConfig);
-            localStorage.setItem('whatsappConfig', JSON.stringify(autoConfig));
-            setIsConfigured(true);
-          }
-        })
-        .catch(() => { /* Keep chat view even if env check fails */ });
-    }
-
-    const savedContacts = localStorage.getItem('whatsappContacts');
-    let localContacts: Contact[] = [];
-    if (savedContacts) {
-      localContacts = JSON.parse(savedContacts);
-      setContacts(localContacts);
-    }
-
-    // Hydrate conversations from backend for instant ChatList preview
-    fetch('/api/conversations')
-      .then(res => res.json())
-      .then(data => {
-        if (data.success && data.conversations) {
-          const initialMessages: Record<string, Message[]> = {};
-          let currentContacts = [...localContacts];
-          let updatedContacts = false;
-
-          data.conversations.forEach((conv: any) => {
-            const normPhone = normalizePhone(conv.phoneNumber);
-
-            // If contact doesn't exist locally, merge it from backend
-            if (!currentContacts.find(c => normalizePhone(c.phoneNumber) === normPhone)) {
-              currentContacts.push({
-                id: conv._id.toString(),
-                name: conv.contactName || normPhone,
-                phoneNumber: normPhone,
-                online: undefined
-              });
-              updatedContacts = true;
-            }
-
-            // Hydrate the last message preview
-            if (conv.lastMessage) {
-              initialMessages[normPhone] = [{
-                id: 'preview-' + conv._id,
-                content: conv.lastMessage,
-                timestamp: conv.lastMessageTimestamp,
-                sender: 'contact',
-                status: MessageStatus.DELIVERED,
-                recipientId: normPhone,
-                attachments: false
-              }];
-            }
-          });
-
-          if (updatedContacts) {
-            setContacts(currentContacts); // This will trigger the localStorage save effect automatically
-          }
-
-          // Prehydrate the message strings — this resolves the "No messages yet" on page load
-          setMessages(prev => {
-            const merged = { ...initialMessages };
-            // Ensure we don't accidentally overwrite fully loaded chats if React StrictMode fires twice
-            Object.keys(prev).forEach(key => {
-              if (prev[key] && prev[key].length > 1) {
-                merged[key] = prev[key];
-              }
-            });
-            return merged;
-          });
-        }
-      })
-      .catch(err => console.error('Failed to hydrate conversations:', err));
-  }, []);
-
-  // Update the messages state when real-time messages change
-  // This is the SINGLE source of truth for messages from the DB + SSE stream
-  useEffect(() => {
-    if (selectedContact && realtimeMessages.length > 0) {
-      const key = normalizePhone(selectedContact.phoneNumber);
-
-      // Prevent stale messages from another contact overwriting the new contact's key
-      if (realtimeMessagesPhone && realtimeMessagesPhone !== key) {
-        return;
-      }
-
-      setMessages(prev => ({
-        ...prev,
-        [key]: realtimeMessages
-      }));
-    }
-  }, [realtimeMessages, realtimeMessagesPhone, selectedContact]);
-
-  // Save contacts to localStorage whenever they change
-  useEffect(() => {
-    if (contacts.length > 0) {
-      localStorage.setItem('whatsappContacts', JSON.stringify(contacts));
-    }
-  }, [contacts]);
-
-  const handleConfigSave = (accessToken: string, phoneNumberId: string) => {
-    const newConfig = { accessToken, phoneNumberId };
-    setConfig(newConfig);
-    localStorage.setItem('whatsappConfig', JSON.stringify(newConfig));
-    setIsConfigured(true);
-  };
-
-  const handleAddContact = (contact: Contact) => {
-    setContacts(prev => [...prev, contact]);
-    setShowAddModal(false);
-  };
-
-  const handleEditContact = (updatedContact: Contact) => {
-    setContacts(prev => prev.map(c => c.id === updatedContact.id ? updatedContact : c));
-    // Update selected contact if it's the one being edited
-    if (selectedContact?.id === updatedContact.id) {
-      setSelectedContact(updatedContact);
-    }
-  };
-
-  const handleDeleteContact = (contactId: string) => {
-    setContacts(prev => prev.filter(c => c.id !== contactId));
-    // Deselect if deleted contact was selected
-    if (selectedContact?.id === contactId) {
-      setSelectedContact(null);
-    }
-  };
-
-  const handleContactSelect = (contact: Contact) => {
-    setSelectedContact(contact);
-    // Clear unread count when selecting a contact
-    clearUnread(contact.phoneNumber);
-  };
-
-  // Handle clicking on a toast notification — navigate to that contact
-  const handleToastClick = (phoneNumber: string) => {
-    dismissNotification();
-    const normalized = normalizePhone(phoneNumber);
-    const contact = contacts.find(c => normalizePhone(c.phoneNumber) === normalized);
-    if (contact) {
-      setSelectedContact(contact);
-      clearUnread(phoneNumber);
-      setActiveTab('chats');
-    }
-  };
-
-  const sendMessage = async (content: string) => {
-    if (!selectedContact) return;
-
-    const key = normalizePhone(selectedContact.phoneNumber);
-
-    // Create a new message
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      content,
-      timestamp: new Date().toISOString(),
-      sender: 'user',
-      status: MessageStatus.PENDING,
-      recipientId: key,
-      attachments: false
-    };
-
-    // Update messages state with the new message
-    setMessages(prev => {
-      const contactMessages = prev[key] || [];
-      const updatedMessages = [...contactMessages, newMessage];
-
-      // Also store message on the server
-      fetch('/api/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          phoneNumber: key,
-          message: {
-            id: newMessage.id,
-            text: { body: content },
-            timestamp: Math.floor(Date.now() / 1000),
-            from: 'user'
-          }
-        })
-      }).catch(error => console.error('Failed to store message:', error));
-
-      return {
-        ...prev,
-        [key]: updatedMessages
-      };
-    });
-
-    try {
-      // Call the API to send the message
-      const response = await fetch('/api/send-message', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          to: selectedContact.phoneNumber,
-          message: content,
-          accessToken: config.accessToken,
-          phoneNumberId: config.phoneNumberId
-        }),
-      });
-
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        console.error('Send message failed. Backend returned:', errData);
-        throw new Error(errData.error || 'Failed to send message');
-      }
-
-      // Update message status to sent
-      setMessages(prev => {
-        const contactMessages = (prev[key] || []).map(msg =>
-          msg.id === newMessage.id ? { ...msg, status: MessageStatus.SENT } : msg
-        );
-        return {
-          ...prev,
-          [key]: contactMessages
-        };
-      });
-    } catch (error) {
-      console.error('Error sending message:', error);
-      // Update message status to failed
-      setMessages(prev => {
-        const contactMessages = (prev[key] || []).map(msg =>
-          msg.id === newMessage.id ? { ...msg, status: MessageStatus.FAILED } : msg
-        );
-        return {
-          ...prev,
-          [key]: contactMessages
-        };
-      });
-    }
-  };
-
-  // Mock function to simulate receiving a message
-  const simulateIncomingMessage = (contact: Contact, content: string) => {
-    const key = normalizePhone(contact.phoneNumber);
-    const incomingMessage: Message = {
-      id: Date.now().toString(),
-      content,
-      timestamp: new Date().toISOString(),
-      sender: 'contact',
-      status: MessageStatus.DELIVERED,
-      recipientId: 'me',
-      attachments: false
-    };
-
-    setMessages(prev => {
-      const contactMessages = prev[key] || [];
-      return {
-        ...prev,
-        [key]: [...contactMessages, incomingMessage]
-      };
-    });
-  };
-
-  // Handle "Use Template" from TemplatesPanel
-  const handleUseTemplate = (template: TemplateForBulk) => {
-    setPreSelectedTemplate(template);
-    setActiveTab('bulk');
-  };
-
-  // Tab icons and labels
-  const tabs: { key: SidebarTab; label: string; icon: string }[] = [
-    { key: 'chats', label: 'Chats', icon: '💬' },
-    { key: 'templates', label: 'Templates', icon: '📋' },
-    { key: 'bulk', label: 'Bulk Send', icon: '📢' },
-  ];
-
-  // Get messages for a contact using normalized phone key
-  const getContactMessages = (phoneNumber: string): Message[] => {
-    return messages[normalizePhone(phoneNumber)] || [];
-  };
-
+export default function LandingPage() {
   return (
-    <main className="flex h-screen" style={{ background: '#f8fafc' }}>
-      {/* Left side - 30% width */}
-      <div className="w-3/10 h-full flex flex-col border-r" style={{ borderColor: '#e2e8f0', background: '#ffffff' }}>
-        {/* WhatsApp logo and config */}
-        <div className="px-4 py-3.5 flex justify-between items-center border-b" style={{ background: 'rgba(255,255,255,0.85)', borderColor: '#e2e8f0', backdropFilter: 'blur(12px)' }}>
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #8b5cf6, #c084fc)', boxShadow: '0 4px 12px rgba(139,92,246,0.3)' }}>
-              <span className="text-white text-base">💬</span>
-            </div>
-            <h1 className="text-[17px] font-semibold" style={{ color: '#0f172a', letterSpacing: '-0.3px' }}>Whatzupp</h1>
-          </div>
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-blue-200">
+      {/* Navbar */}
+      <nav className="sticky top-0 z-50 backdrop-blur-md bg-white/80 border-b border-slate-100 transition-all">
+        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            {currentUser && (
-              <span className="text-xs font-medium px-2 py-1 rounded-lg" style={{ color: '#64748b', background: 'rgba(139,92,246,0.08)' }}>
-                {currentUser.name}
-              </span>
-            )}
-            <button
-              id="logout-button"
-              onClick={handleLogout}
-              disabled={loggingOut}
-              className="p-2 rounded-xl transition-all duration-200"
-              style={{ color: '#64748b' }}
-              title="Logout"
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; e.currentTarget.style.color = '#ef4444'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#64748b'; }}
-            >
-              <LogOut size={16} />
+            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-sm">
+              <MessageSquare size={18} strokeWidth={2.5} />
+            </div>
+            <span className="font-bold text-xl tracking-tight text-slate-900">WhatZupp</span>
+          </div>
+          
+          <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
+            <a href="#features" className="hover:text-blue-600 transition-colors">Features</a>
+            <a href="#pricing" className="hover:text-blue-600 transition-colors">Pricing</a>
+            <a href="#about" className="hover:text-blue-600 transition-colors">About</a>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <Link href="/login" className="text-sm font-medium text-slate-700 hover:text-blue-600 transition-colors">
+              Login
+            </Link>
+            <Link href="/signup" className="text-sm font-medium bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-sm shadow-blue-600/20">
+              Get Started
+            </Link>
+          </div>
+        </div>
+      </nav>
+
+      {/* Hero Section */}
+      <section className="pt-32 pb-24 px-6 relative overflow-hidden">
+        {/* Subtle background glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-500/10 blur-[120px] rounded-full pointer-events-none -z-10" />
+        
+        <div className="max-w-4xl mx-auto text-center">
+          <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight text-slate-900 mb-6 leading-tight">
+            Enterprise WhatsApp Engagement, <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Simplified.</span>
+          </h1>
+          <p className="text-lg md:text-xl text-slate-600 mb-10 max-w-2xl mx-auto leading-relaxed">
+            Manage multiple workspaces, contacts, and high-volume messaging campaigns from one powerful, secure platform.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link href="/signup" className="w-full sm:w-auto px-8 py-3.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-all shadow-sm shadow-blue-600/20 text-center">
+              Start Free Trial
+            </Link>
+            <button className="w-full sm:w-auto px-8 py-3.5 bg-white text-slate-700 font-medium rounded-lg border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-all text-center">
+              Watch Demo
             </button>
-          <button
-            onClick={() => setIsConfigured(prev => !prev)}
-            className="p-2 rounded-xl transition-all duration-200"
-            style={{ color: isConfigured ? '#64748b' : '#8b5cf6' }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(139,92,246,0.1)'; e.currentTarget.style.color = '#8b5cf6'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = isConfigured ? '#64748b' : '#8b5cf6'; }}
-          >
-            <FaCog size={16} />
-          </button>
           </div>
         </div>
 
-        {/* WhatsApp Configuration or Tabbed Content */}
-        {!isConfigured ? (
-          <WhatsAppConfig onSave={handleConfigSave} />
-        ) : (
-          <>
-            {/* Tab Navigation */}
-            <div className="flex border-b" style={{ background: '#ffffff', borderColor: '#e2e8f0' }}>
-              {tabs.map((tab) => (
-                <button
-                  key={tab.key}
-                  onClick={() => setActiveTab(tab.key)}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-medium transition-all duration-200 relative"
-                  style={{ color: activeTab === tab.key ? '#8b5cf6' : '#94a3b8' }}
-                >
-                  <span className="text-sm">{tab.icon}</span>
-                  <span>{tab.label}</span>
-                  {/* Active indicator bar */}
-                  {activeTab === tab.key && (
-                    <span className="absolute bottom-0 left-1/4 right-1/4 h-0.5 rounded-full" style={{ background: 'linear-gradient(90deg, #8b5cf6, #c084fc)' }} />
-                  )}
-                </button>
-              ))}
-            </div>
-
-            {/* Tab Content */}
-            {activeTab === 'chats' && (
-              <>
-                <div className="px-3 pt-3 pb-2" style={{ background: '#ffffff' }}>
-                  <button
-                    onClick={() => setShowAddModal(true)}
-                    className="w-full py-2.5 rounded-xl font-medium transition-all duration-200 text-sm flex items-center justify-center gap-2 text-white"
-                    style={{ background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)', boxShadow: '0 4px 14px rgba(124,58,237,0.25)' }}
-                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(124,58,237,0.3)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(124,58,237,0.25)'; }}
-                  >
-                    <UserPlus size={16} />
-                    Add Recipient
-                  </button>
+        {/* Hero Mockup */}
+        <div className="max-w-5xl mx-auto mt-20 relative">
+          <div className="rounded-2xl border border-slate-200/60 bg-white/50 backdrop-blur-sm p-2 shadow-2xl shadow-blue-900/5">
+            <div className="rounded-xl overflow-hidden bg-white border border-slate-100 flex h-[400px] shadow-sm">
+              {/* Fake Sidebar */}
+              <div className="w-16 border-r border-slate-100 bg-slate-50 flex flex-col items-center py-4 gap-6 shrink-0">
+                <div className="w-8 h-8 rounded bg-blue-100 text-blue-600 flex items-center justify-center mb-4"><MessageSquare size={16} /></div>
+                <div className="w-8 h-8 rounded bg-blue-600 text-white flex items-center justify-center shadow-sm"><Users2 size={16} /></div>
+                <div className="w-8 h-8 rounded text-slate-400 flex items-center justify-center"><BarChart3 size={16} /></div>
+                <div className="w-8 h-8 rounded text-slate-400 flex items-center justify-center"><Zap size={16} /></div>
+              </div>
+              {/* Fake Content */}
+              <div className="flex-1 p-8 bg-slate-50/50">
+                <div className="h-8 w-48 bg-slate-200 rounded-md mb-8 animate-pulse" />
+                <div className="grid grid-cols-3 gap-6">
+                  <div className="h-32 bg-white rounded-xl border border-slate-100 shadow-sm p-6">
+                     <div className="h-4 w-24 bg-slate-100 rounded mb-4" />
+                     <div className="h-8 w-16 bg-slate-200 rounded" />
+                  </div>
+                  <div className="h-32 bg-white rounded-xl border border-slate-100 shadow-sm p-6">
+                     <div className="h-4 w-24 bg-slate-100 rounded mb-4" />
+                     <div className="h-8 w-16 bg-slate-200 rounded" />
+                  </div>
+                  <div className="h-32 bg-white rounded-xl border border-slate-100 shadow-sm p-6">
+                     <div className="h-4 w-24 bg-slate-100 rounded mb-4" />
+                     <div className="h-8 w-16 bg-slate-200 rounded" />
+                  </div>
                 </div>
-                <ChatList
-                  contacts={contacts}
-                  selectedContact={selectedContact}
-                  onSelectContact={handleContactSelect}
-                  onEditContact={handleEditContact}
-                  onDeleteContact={handleDeleteContact}
-                  messages={messages}
-                  unreadCounts={unreadCounts}
-                />
-              </>
-            )}
-
-            {activeTab === 'templates' && (
-              <TemplatesPanel onUseTemplate={handleUseTemplate} />
-            )}
-
-            {activeTab === 'bulk' && (
-              <BulkSendPanel preSelectedTemplate={preSelectedTemplate} />
-            )}
-          </>
-        )}
-      </div>
-
-      {/* Right side - 70% width */}
-      <div className="w-7/10 h-full flex flex-col" style={{ background: '#f8fafc' }}>
-        {selectedContact ? (
-          <ChatWindow
-            contact={selectedContact}
-            messages={getContactMessages(selectedContact.phoneNumber)}
-            onSendMessage={sendMessage}
-            onSimulateIncoming={() => simulateIncomingMessage(selectedContact, 'This is a test reply')}
-            onCloseChat={() => setSelectedContact(null)}
-          />
-        ) : (
-          <div className="flex-1 flex flex-col items-center justify-center">
-            <div className="w-20 h-20 rounded-2xl flex items-center justify-center mb-5" style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.1), rgba(192,132,252,0.1))', border: '1px solid rgba(139,92,246,0.15)' }}>
-              <span className="text-4xl opacity-60">💬</span>
+              </div>
             </div>
-            <p className="text-lg font-semibold" style={{ color: '#0f172a' }}>Whatzupp for Business</p>
-            <p className="text-sm mt-1" style={{ color: '#64748b' }}>Select a chat to start messaging</p>
-            <div className="mt-4 w-16 h-[1px]" style={{ background: 'linear-gradient(90deg, transparent, #e2e8f0, transparent)' }}></div>
           </div>
-        )}
-      </div>
+        </div>
+      </section>
 
-      {/* Add Recipient Modal */}
-      {showAddModal && (
-        <AddRecipientModal
-          onAdd={handleAddContact}
-          onClose={() => setShowAddModal(false)}
-        />
-      )}
+      {/* Stats Bar */}
+      <section className="bg-slate-900 py-16 border-y border-slate-800">
+        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-8 text-center divide-y md:divide-y-0 md:divide-x divide-slate-800">
+          <div className="flex flex-col items-center pt-8 md:pt-0">
+            <span className="text-4xl font-bold text-white mb-2">10,000+</span>
+            <span className="text-slate-400 font-medium">Businesses</span>
+          </div>
+          <div className="flex flex-col items-center pt-8 md:pt-0">
+            <span className="text-4xl font-bold text-white mb-2">50M+</span>
+            <span className="text-slate-400 font-medium">Messages Sent</span>
+          </div>
+          <div className="flex flex-col items-center pt-8 md:pt-0">
+            <span className="text-4xl font-bold text-white mb-2">99.9%</span>
+            <span className="text-slate-400 font-medium">Uptime Guarantee</span>
+          </div>
+        </div>
+      </section>
 
-      {/* Toast Notification */}
-      {latestNotification && (
-        <ToastNotification
-          phoneNumber={latestNotification.phoneNumber}
-          contactName={latestNotification.contactName}
-          messagePreview={latestNotification.message.content}
-          onDismiss={dismissNotification}
-          onClick={handleToastClick}
-        />
-      )}
-    </main>
+      {/* Features Section */}
+      <section id="features" className="py-24 px-6 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">Everything you need to scale.</h2>
+            <p className="text-lg text-slate-600 max-w-2xl mx-auto">Purpose-built tools for enterprise teams to manage WhatsApp communications flawlessly.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300 group">
+              <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 mb-6 group-hover:scale-110 transition-transform">
+                <Users2 size={24} />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 mb-3">Multi-Workspace</h3>
+              <p className="text-slate-600 leading-relaxed">Isolate contacts, chats, and templates across different teams, brands, or regions seamlessly.</p>
+            </div>
+
+            <div className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300 group">
+              <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 mb-6 group-hover:scale-110 transition-transform">
+                <MessageSquare size={24} />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 mb-3">Real-time Messaging</h3>
+              <p className="text-slate-600 leading-relaxed">Lightning-fast two-way messaging with rich media support and read receipts.</p>
+            </div>
+
+            <div className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300 group">
+              <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 mb-6 group-hover:scale-110 transition-transform">
+                <BarChart3 size={24} />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 mb-3">Advanced Analytics</h3>
+              <p className="text-slate-600 leading-relaxed">Gain deep insights into your engagement rates, response times, and campaign performance.</p>
+            </div>
+
+            <div className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300 group">
+              <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 mb-6 group-hover:scale-110 transition-transform">
+                <Zap size={24} />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 mb-3">Fast Reply Templates</h3>
+              <p className="text-slate-600 leading-relaxed">Save time with customizable fast replies and automated message templates.</p>
+            </div>
+
+            <div className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300 group">
+              <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-700 mb-6 group-hover:scale-110 transition-transform">
+                <Shield size={24} />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 mb-3">Enterprise Security</h3>
+              <p className="text-slate-600 leading-relaxed">Bank-grade encryption and granular role-based access controls keep your data safe.</p>
+            </div>
+
+            <div className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300 group">
+              <div className="w-12 h-12 rounded-xl bg-cyan-50 flex items-center justify-center text-cyan-600 mb-6 group-hover:scale-110 transition-transform">
+                <Globe size={24} />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 mb-3">SFMC Integration</h3>
+              <p className="text-slate-600 leading-relaxed">Natively sync with Salesforce Marketing Cloud for automated Journey Builder triggers.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Blue CTA Section */}
+      <section className="py-24 px-6 bg-gradient-to-br from-blue-600 to-indigo-700 text-center">
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">Ready to transform your messaging?</h2>
+          <p className="text-blue-100 text-lg mb-10">Join thousands of leading enterprises already using WhatZupp to engage their customers on WhatsApp.</p>
+          <Link href="/signup" className="inline-block px-8 py-4 bg-white text-blue-600 font-bold rounded-lg hover:bg-slate-50 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5">
+            Start Your Free Trial
+          </Link>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-white border-t border-slate-200 py-12 px-6">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded bg-blue-600 flex items-center justify-center text-white">
+              <MessageSquare size={12} strokeWidth={3} />
+            </div>
+            <span className="font-bold text-slate-900 tracking-tight">WhatZupp</span>
+          </div>
+          <p className="text-slate-500 text-sm">© {new Date().getFullYear()} Pentacloud Consulting. All rights reserved.</p>
+        </div>
+      </footer>
+    </div>
   );
 }

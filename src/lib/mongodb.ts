@@ -66,11 +66,21 @@ async function connectMongoDB(): Promise<mongoose.Connection> {
   }
 
   try {
-    const mongooseInstance = await cached.promise;
+    let mongooseInstance = await cached.promise;
+    
+    // Check if connection is disconnected or has errored out
+    if (mongooseInstance && mongooseInstance.connection.readyState !== 1 && mongooseInstance.connection.readyState !== 2) {
+      console.log('MongoDB connection was lost. Reconnecting...');
+      cached.promise = null;
+      cached.conn = null;
+      return connectMongoDB(); // recursive retry
+    }
+    
     cached.conn = mongooseInstance.connection;
     return cached.conn;
   } catch (e) {
     cached.promise = null;
+    cached.conn = null;
     throw e;
   }
 }

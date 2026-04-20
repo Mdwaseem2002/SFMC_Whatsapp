@@ -3,9 +3,14 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
   try {
-    const { to, message, accessToken, phoneNumberId } = await request.json();
+    const body = await request.json();
+    const { to, message, mediaId, mediaType, mimeType, filename } = body;
 
-    if (!to || !message || !accessToken || !phoneNumberId) {
+    // Always prefer server-side env (updated in real-time via /api/save-env)
+    const accessToken = process.env.WHATSAPP_ACCESS_TOKEN || body.accessToken;
+    const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID || body.phoneNumberId;
+
+    if (!to || (!message && !mediaId) || !accessToken || !phoneNumberId) {
       return NextResponse.json(
         { error: 'Missing required parameters' },
         { status: 400 }
@@ -14,6 +19,27 @@ export async function POST(request: Request) {
 
     // Format the phone number to remove '+' if present, as WhatsApp API expects it without '+'
     const formattedPhone = to.replace('+', '');
+
+    // Construct Meta payload
+    const payload: any = {
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to: formattedPhone,
+    };
+
+    if (mediaId && mediaType) {
+      payload.type = mediaType;
+      payload[mediaType] = { id: mediaId };
+      if (message) {
+        payload[mediaType].caption = message;
+      }
+      if (filename && mediaType === 'document') {
+        payload[mediaType].filename = filename;
+      }
+    } else {
+      payload.type = 'text';
+      payload.text = { preview_url: false, body: message || '' };
+    }
 
     // Send message to WhatsApp Business API
     const response = await fetch(
@@ -24,18 +50,10 @@ export async function POST(request: Request) {
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          messaging_product: 'whatsapp',
-          recipient_type: 'individual',
-          to: formattedPhone,
-          type: 'text',
-          text: {
-            preview_url: false,
-            body: message,
-          },
-        }),
+        body: JSON.stringify(payload),
       }
     );
+
 
     if (!response.ok) {
       const errorData = await response.json();

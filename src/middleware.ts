@@ -19,8 +19,17 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Allow public paths
-  const isPublic = publicPaths.some((path) => pathname.startsWith(path));
+  const isPublicPath = publicPaths.some((path) => pathname.startsWith(path));
+  const isPublic = isPublicPath || pathname === '/';
+  
+  // Check session early
+  const session = await getSessionFromRequest(request);
+
   if (isPublic) {
+    // If user is logged in and visits the public landing page, login, or signup, redirect them to dashboard
+    if (session && (pathname === '/' || pathname === '/login' || pathname === '/signup')) {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
     return NextResponse.next();
   }
 
@@ -29,9 +38,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Check session
-  const session = await getSessionFromRequest(request);
-
+  // Check session (already fetched at the top)
+  // const session = await getSessionFromRequest(request);
   // Allow internal webhook requests that contain the secret
   const internalSecret = request.headers.get('x-internal-secret');
   if (!session && internalSecret !== (process.env.JWT_SECRET || 'fallback-secret')) {
