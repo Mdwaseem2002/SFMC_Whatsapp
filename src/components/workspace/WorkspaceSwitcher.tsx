@@ -37,8 +37,7 @@ export default function WorkspaceSwitcher() {
     <div ref={ref} className="relative font-sans">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 py-1.5 px-3 pr-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-        style={{ ':hover ': { borderColor: activeWorkspace.color } } as any}
+        className="flex items-center gap-2 py-1.5 px-3 pr-2 rounded-xl bg-white border border-gray-200 hover:border-[#25D366]/30 hover:bg-gray-50 transition-all focus:outline-none focus:ring-2 focus:ring-[#25D366]/20"
       >
         <span 
           className="w-5 h-5 rounded-md flex items-center justify-center text-white"
@@ -46,18 +45,18 @@ export default function WorkspaceSwitcher() {
         >
           {renderIcon(activeWorkspace.icon, { size: 12, strokeWidth: 2.5 })}
         </span>
-        <span className="text-sm font-semibold text-slate-900 tracking-tight">
+        <span className="text-sm font-semibold text-gray-900 tracking-tight">
           {activeWorkspace.name}
         </span>
         <ChevronDown 
           size={14} 
-          className={`text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`}
+          className={`text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`}
         />
       </button>
 
       {open && (
-        <div className="absolute top-[calc(100%+8px)] left-0 min-w-[240px] bg-white border border-slate-100 rounded-xl shadow-[0_12px_40px_rgb(0,0,0,0.12)] z-[100] animate-in fade-in slide-in-from-top-2 py-1.5 focus:outline-none">
-          <div className="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+        <div className="absolute top-[calc(100%+8px)] left-0 min-w-[240px] bg-white border border-gray-200 rounded-xl shadow-lg shadow-black/[0.08] z-[100] py-1.5 focus:outline-none">
+          <div className="px-3 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
             Workspaces
           </div>
           <div className="flex flex-col">
@@ -65,7 +64,7 @@ export default function WorkspaceSwitcher() {
               <button
                 key={ws.id}
                 onClick={() => { setActiveWorkspace(ws.id); setOpen(false); }}
-                className={`w-full flex items-center justify-between px-3 py-2.5 hover:bg-slate-50 transition-colors ${ws.id === activeWorkspace.id ? 'bg-slate-50' : 'bg-transparent'}`}
+                className={`w-full flex items-center justify-between px-3 py-2.5 hover:bg-gray-50 transition-colors ${ws.id === activeWorkspace.id ? 'bg-[#25D366]/[0.04]' : 'bg-transparent'}`}
               >
                 <div className="flex items-center gap-3">
                   <span 
@@ -74,12 +73,12 @@ export default function WorkspaceSwitcher() {
                   >
                     {renderIcon(ws.icon, { size: 14 })}
                   </span>
-                  <span className={`text-sm ${ws.id === activeWorkspace.id ? 'font-semibold text-slate-900' : 'font-medium text-slate-600'}`}>
+                  <span className={`text-sm ${ws.id === activeWorkspace.id ? 'font-semibold text-gray-900' : 'font-medium text-gray-600'}`}>
                     {ws.name}
                   </span>
                 </div>
                 {ws.id === activeWorkspace.id && (
-                  <Check size={16} style={{ color: ws.color }} />
+                  <Check size={16} className="text-[#25D366]" />
                 )}
               </button>
             ))}

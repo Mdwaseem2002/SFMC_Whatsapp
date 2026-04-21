@@ -1,34 +1,23 @@
 'use client';
 
 // src/components/app/ChatsView.tsx
-// Wraps the EXISTING ChatList, ChatWindow, AddRecipientModal, TemplatesPanel, BulkSendPanel.
-// ZERO changes to those components — only filters contacts by workspace before passing them in.
+// Chat screen — ChatList + ChatWindow. Templates & Broadcasts now live in their own sidebar screens.
 // STRICT WORKSPACE ISOLATION: only contacts saved in the active workspace appear.
 // Fast reply templates accessible via ⚡ overlay button in the chat area.
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { UserPlus } from 'lucide-react';
+import { UserPlus, Zap, X, MessageSquare } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import ChatList from '@/components/ChatList';
 import ChatWindow from '@/components/ChatWindow';
 import AddRecipientModal from '@/components/AddRecipientModel';
-import TemplatesPanel from '@/components/TemplatesPanel';
-import BulkSendPanel from '@/components/BulkSendPanel';
 import ToastNotification from '@/components/ToastNotification';
 import { useRealtimeMessages } from '@/app/hooks/useRealtimeMessages';
 import { useGlobalNotifications } from '@/app/hooks/useGlobalNotifications';
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider';
 import { Contact, Message, MessageStatus } from '@/types';
 
-type SidebarTab = 'chats' | 'templates' | 'bulk';
 
-interface TemplateForBulk {
-  id: string;
-  name: string;
-  language: string;
-  category: string;
-  status: string;
-  components: Array<{ type: string; text?: string }>;
-}
 
 // Helper: normalize phone number by stripping leading '+'
 function normalizePhone(phone: string | undefined | null): string {
@@ -49,10 +38,7 @@ export default function ChatsView() {
   const { messages: realtimeMessages, phoneNumber: realtimeMessagesPhone } = useRealtimeMessages(selectedContact);
   const [showAddModal, setShowAddModal] = useState(false);
   const [config, setConfig] = useState({ accessToken: '', phoneNumberId: '' });
-  const [activeTab, setActiveTab] = useState<SidebarTab>('chats');
-  const [preSelectedTemplate, setPreSelectedTemplate] = useState<TemplateForBulk | null>(null);
   const [showFastReply, setShowFastReply] = useState(false);
-  const [pendingFastReplyText, setPendingFastReplyText] = useState<string | null>(null);
 
   // Global notification system
   const selectedPhoneNormalized = selectedContact ? normalizePhone(selectedContact.phoneNumber) : null;
@@ -241,7 +227,6 @@ export default function ChatsView() {
     if (contact) {
       setSelectedContact(contact);
       clearUnread(phoneNumber);
-      setActiveTab('chats');
     }
   };
 
@@ -329,68 +314,26 @@ export default function ChatsView() {
     setMessages(prev => ({ ...prev, [key]: [...(prev[key] || []), incomingMessage] }));
   };
 
-  const handleUseTemplate = (template: TemplateForBulk) => {
-    setPreSelectedTemplate(template);
-    setActiveTab('bulk');
-  };
-
   const getContactMessages = (phoneNumber: string): Message[] => {
     return messages[normalizePhone(phoneNumber)] || [];
   };
 
-  const tabs: { key: SidebarTab; label: string; icon: string }[] = [
-    { key: 'chats', label: 'Chats', icon: '💬' },
-    { key: 'templates', label: 'Templates', icon: '📋' },
-    { key: 'bulk', label: 'Bulk Send', icon: '📢' },
-  ];
-
-  const accentColor = activeWorkspace?.color || '#8b5cf6';
+  const accentColor = '#25D366';
 
   return (
     <div className="flex flex-1 h-full overflow-hidden">
       {/* Left Sidebar — Chat List */}
       <div className="h-full flex flex-col border-r" style={{ width: '340px', borderColor: '#e2e8f0', background: '#ffffff', flexShrink: 0 }}>
-        {/* Tab Navigation */}
-        <div className="flex border-b" style={{ background: '#ffffff', borderColor: '#e2e8f0' }}>
-          {tabs.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className="flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-medium transition-all duration-200 relative"
-              style={{ color: activeTab === tab.key ? accentColor : '#94a3b8' }}
-            >
-              <span className="text-sm">{tab.icon}</span>
-              <span>{tab.label}</span>
-              {activeTab === tab.key && (
-                <span className="absolute bottom-0 left-1/4 right-1/4 h-0.5 rounded-full" style={{ background: `linear-gradient(90deg, ${accentColor}, ${accentColor}99)` }} />
-              )}
-            </button>
-          ))}
-        </div>
-
-        {/* Tab Content */}
-        {activeTab === 'chats' && (
-          <>
-            <ChatList
-              contacts={filteredContacts}
-              selectedContact={selectedContact}
-              onSelectContact={handleContactSelect}
-              onEditContact={handleEditContact}
-              onDeleteContact={handleDeleteContact}
-              messages={messages}
-              unreadCounts={unreadCounts}
-              onShowAddModal={() => setShowAddModal(true)}
-            />
-          </>
-        )}
-
-        {activeTab === 'templates' && (
-          <TemplatesPanel onUseTemplate={handleUseTemplate} />
-        )}
-
-        {activeTab === 'bulk' && (
-          <BulkSendPanel preSelectedTemplate={preSelectedTemplate} />
-        )}
+        <ChatList
+          contacts={filteredContacts}
+          selectedContact={selectedContact}
+          onSelectContact={handleContactSelect}
+          onEditContact={handleEditContact}
+          onDeleteContact={handleDeleteContact}
+          messages={messages}
+          unreadCounts={unreadCounts}
+          onShowAddModal={() => setShowAddModal(true)}
+        />
       </div>
 
       {/* Right Side — Chat Window + Fast Reply Overlay */}
@@ -405,85 +348,158 @@ export default function ChatsView() {
               onCloseChat={() => setSelectedContact(null)}
             />
 
-            {/* ⚡ Fast Reply Button — floating above the chat input */}
-            <button
+            {/* ⚡ Fast Reply Button — premium floating button */}
+            <motion.button
               onClick={() => setShowFastReply(!showFastReply)}
               title="Fast Replies"
+              whileHover={{ scale: 1.12 }}
+              whileTap={{ scale: 0.92 }}
+              animate={showFastReply ? { rotate: 0 } : { rotate: 0 }}
               style={{
-                position: 'absolute', bottom: '72px', right: '20px',
-                width: '42px', height: '42px', borderRadius: '50%',
-                background: showFastReply ? accentColor : '#ffffff',
-                border: `2px solid ${accentColor}`,
-                boxShadow: `0 4px 16px ${accentColor}30`,
+                position: 'absolute', bottom: '76px', right: '20px',
+                width: '44px', height: '44px', borderRadius: '50%',
+                background: showFastReply
+                  ? 'linear-gradient(135deg, #25D366 0%, #1ebe5d 100%)'
+                  : 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+                border: showFastReply ? 'none' : `2px solid ${accentColor}40`,
+                boxShadow: showFastReply
+                  ? '0 4px 20px rgba(37,211,102,0.35)'
+                  : '0 4px 16px rgba(37,211,102,0.15)',
                 cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '18px', transition: 'all 0.2s ease', zIndex: 30,
+                transition: 'all 0.2s ease', zIndex: 30,
+                color: showFastReply ? '#ffffff' : accentColor,
               }}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.1)'; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
             >
-              {showFastReply ? '✕' : '⚡'}
-            </button>
+              {showFastReply ? <X size={18} /> : <Zap size={18} />}
+            </motion.button>
 
-            {/* Fast Reply Popup */}
-            {showFastReply && (
-              <div style={{
-                position: 'absolute', bottom: '120px', right: '16px',
-                width: '300px', maxHeight: '320px', overflowY: 'auto',
-                background: '#ffffff', borderRadius: '16px',
-                border: '1px solid #e2e8f0', boxShadow: '0 12px 40px rgba(0,0,0,0.15)',
-                zIndex: 30, animation: 'fadeInUp 0.2s ease',
-              }}>
-                <div style={{
-                  padding: '14px 16px', borderBottom: '1px solid #f1f5f9',
-                  fontSize: '13px', fontWeight: '600', color: '#0f172a',
-                  fontFamily: "'Inter', sans-serif",
-                }}>
-                  ⚡ Fast Replies
-                </div>
-                {activeFastReplies.length === 0 ? (
-                  <div style={{ padding: '20px', textAlign: 'center', color: '#94a3b8', fontSize: '13px' }}>
-                    No fast replies. Add them in the Fast Reply tab.
+            {/* Fast Reply Expandable Panel */}
+            <AnimatePresence>
+              {showFastReply && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 12, scale: 0.97 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                  style={{
+                    position: 'absolute', bottom: '128px', right: '16px',
+                    width: '320px', maxHeight: '360px', overflowY: 'auto',
+                    borderRadius: '20px',
+                    zIndex: 30,
+                    background: 'rgba(255,255,255,0.95)',
+                    backdropFilter: 'blur(20px) saturate(180%)',
+                    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+                    border: '1px solid rgba(226,232,240,0.8)',
+                    boxShadow: '0 16px 48px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.06)',
+                  }}>
+                  <div style={{
+                    padding: '16px 20px', borderBottom: '1px solid #f1f5f9',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  }}>
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: '8px',
+                      fontSize: '14px', fontWeight: '700', color: '#0f172a',
+                      fontFamily: "'Inter', sans-serif",
+                    }}>
+                      <div style={{
+                        width: '28px', height: '28px', borderRadius: '8px',
+                        background: `linear-gradient(135deg, ${accentColor}15, ${accentColor}08)`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}>
+                        <Zap size={14} style={{ color: accentColor }} />
+                      </div>
+                      Quick Replies
+                    </div>
+                    <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '600' }}>
+                      {activeFastReplies.length} available
+                    </span>
                   </div>
-                ) : (
-                  activeFastReplies.map(fr => (
-                    <button
-                      key={fr.id}
-                      onClick={() => handleFastReplySelect(fr.body)}
-                      style={{
-                        width: '100%', padding: '12px 16px', border: 'none',
-                        background: 'transparent', cursor: 'pointer',
-                        textAlign: 'left', transition: 'all 0.15s ease',
-                        borderBottom: '1px solid #f8fafc',
-                      }}
-                      onMouseEnter={e => { e.currentTarget.style.background = `${accentColor}08`; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
-                    >
-                      <p style={{
-                        fontSize: '13px', fontWeight: '600', color: '#0f172a',
-                        fontFamily: "'Inter', sans-serif", margin: '0 0 4px',
+                  {activeFastReplies.length === 0 ? (
+                    <div style={{ padding: '28px 20px', textAlign: 'center' }}>
+                      <div style={{
+                        width: '48px', height: '48px', borderRadius: '14px',
+                        background: `${accentColor}08`, margin: '0 auto 12px',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
                       }}>
-                        {fr.title}
+                        <Zap size={22} style={{ color: accentColor, opacity: 0.5 }} />
+                      </div>
+                      <p style={{ color: '#64748b', fontSize: '13px', fontWeight: '600', margin: '0 0 4px' }}>
+                        No quick replies yet
                       </p>
-                      <p style={{
-                        fontSize: '12px', color: '#64748b', fontFamily: "'Inter', sans-serif",
-                        margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                      }}>
-                        {fr.body}
+                      <p style={{ color: '#94a3b8', fontSize: '12px', margin: 0 }}>
+                        Add them in the Fast Reply tab
                       </p>
-                    </button>
-                  ))
-                )}
-              </div>
-            )}
+                    </div>
+                  ) : (
+                    <div style={{ padding: '12px 16px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                      {activeFastReplies.map((fr, idx) => (
+                        <motion.button
+                          key={fr.id}
+                          onClick={() => handleFastReplySelect(fr.body)}
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: idx * 0.04 }}
+                          whileHover={{ scale: 1.04, y: -1 }}
+                          whileTap={{ scale: 0.97 }}
+                          style={{
+                            padding: '8px 14px', border: '1px solid #e2e8f0',
+                            borderRadius: '20px', cursor: 'pointer',
+                            background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+                            textAlign: 'left', transition: 'all 0.15s ease',
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                            fontSize: '12px', fontWeight: '600', color: '#334155',
+                            fontFamily: "'Inter', sans-serif",
+                          }}
+                          onMouseEnter={e => {
+                            e.currentTarget.style.background = `${accentColor}08`;
+                            e.currentTarget.style.borderColor = `${accentColor}30`;
+                            e.currentTarget.style.color = accentColor;
+                          }}
+                          onMouseLeave={e => {
+                            e.currentTarget.style.background = 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)';
+                            e.currentTarget.style.borderColor = '#e2e8f0';
+                            e.currentTarget.style.color = '#334155';
+                          }}
+                        >
+                          {fr.title}
+                        </motion.button>
+                      ))}
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center">
-            <div className="w-20 h-20 rounded-2xl flex items-center justify-center mb-5"
-              style={{ background: `${accentColor}15`, border: `1px solid ${accentColor}25` }}>
-              <span className="text-4xl opacity-60">💬</span>
-            </div>
-            <p className="text-lg font-semibold" style={{ color: '#0f172a' }}>Whatzupp for Business</p>
-            <p className="text-sm mt-1" style={{ color: '#64748b' }}>Select a chat to start messaging</p>
+          <div className="flex-1 flex flex-col items-center justify-center" style={{
+            background: 'radial-gradient(ellipse at 50% 40%, rgba(37,211,102,0.04) 0%, transparent 60%)',
+          }}>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="text-center"
+            >
+              <div className="w-24 h-24 rounded-3xl flex items-center justify-center mb-6 mx-auto"
+                style={{
+                  background: `linear-gradient(135deg, ${accentColor}12, ${accentColor}06)`,
+                  border: `1px solid ${accentColor}18`,
+                  boxShadow: `0 8px 32px ${accentColor}10`,
+                }}>
+                <MessageSquare size={36} style={{ color: accentColor, opacity: 0.7 }} />
+              </div>
+              <p className="text-xl font-bold" style={{ color: '#0f172a', fontFamily: "'Syne', 'Inter', sans-serif" }}>
+                WhatZupp for Business
+              </p>
+              <p className="text-sm mt-2 max-w-[260px] mx-auto leading-relaxed" style={{ color: '#64748b' }}>
+                Select a conversation from the left panel to start messaging
+              </p>
+              <div className="flex items-center justify-center gap-2 mt-5">
+                <div className="w-8 h-[2px] rounded-full" style={{ background: `${accentColor}30` }} />
+                <div className="w-2 h-2 rounded-full" style={{ background: `${accentColor}40` }} />
+                <div className="w-8 h-[2px] rounded-full" style={{ background: `${accentColor}30` }} />
+              </div>
+            </motion.div>
           </div>
         )}
       </div>
@@ -506,13 +522,6 @@ export default function ChatsView() {
           onClick={handleToastClick}
         />
       )}
-
-      <style>{`
-        @keyframes fadeInUp {
-          from { opacity: 0; transform: translateY(8px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
     </div>
   );
 }

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Contact, Message } from '@/types';
 import { formatTimestamp } from '@/utils/formatters';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Pencil, Trash2, X, Check } from 'lucide-react';
+import { Pencil, Trash2, X, Check, MessageSquare, Search, UserPlus, Plus, FileText, LayoutTemplate } from 'lucide-react';
 
 interface ChatListProps {
   contacts: Contact[];
@@ -28,29 +28,21 @@ const ChatList: React.FC<ChatListProps> = ({
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
   const [editName, setEditName] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const getLastMessage = (phoneNumber: string): { text: string; time: string } => {
+  const getLastMessage = (phoneNumber: string): { text: string; time: string; isTemplate: boolean } => {
     const normalizedPhone = phoneNumber.replace(/^\+/, '');
     const contactMessages = messages[normalizedPhone] || messages[phoneNumber] || [];
     if (contactMessages.length === 0) {
-      return { text: 'No messages yet', time: '' };
+      return { text: 'No messages yet', time: '', isTemplate: false };
     }
-    
     const lastMsg = contactMessages[contactMessages.length - 1];
+    const isTemplate = /^\[Template:/.test(lastMsg.content || '');
     return {
-      text: lastMsg.content.length > 30
-        ? lastMsg.content.substring(0, 27) + '...'
-        : lastMsg.content,
-      time: formatTimestamp(lastMsg.timestamp)
+      text: lastMsg.content.length > 35 ? lastMsg.content.substring(0, 32) + '...' : lastMsg.content,
+      time: formatTimestamp(lastMsg.timestamp),
+      isTemplate,
     };
-  };
-
-  const getAvatarColor = (name: string) => {
-    const colors = [
-      '#8b5cf6', '#6366f1', '#ec4899', '#f59e0b', '#10b981', '#06b6d4',
-    ];
-    const hash = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    return colors[hash % colors.length];
   };
 
   const handleStartEdit = (e: React.MouseEvent, contact: Contact) => {
@@ -88,194 +80,219 @@ const ChatList: React.FC<ChatListProps> = ({
     setDeleteConfirmId(null);
   };
 
+  const filteredContacts = contacts.filter(c =>
+    !searchQuery || c.name.toLowerCase().includes(searchQuery.toLowerCase()) || c.phoneNumber.includes(searchQuery)
+  );
+
+  const sortedContacts = [...filteredContacts].sort((a, b) => {
+    const aUnread = unreadCounts[a.phoneNumber.replace(/^\+/, '')] || 0;
+    const bUnread = unreadCounts[b.phoneNumber.replace(/^\+/, '')] || 0;
+    return bUnread - aUnread;
+  });
+
   return (
-    <div className="flex-1 overflow-y-auto" style={{ background: '#ffffff' }}>
-      <div className="sticky top-0 p-3.5 border-b z-10" style={{ background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(8px)', borderColor: '#e2e8f0' }}>
-        <h2 className="text-[15px] font-semibold tracking-wide" style={{ color: '#0f172a' }}>Chats</h2>
-      </div>
+    <div className="flex-1 flex flex-col overflow-hidden bg-white font-sans">
       
-      {contacts.length === 0 ? (
-        <div className="flex flex-col items-center justify-center p-8 mt-10 text-center">
-          <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5" style={{ background: 'rgba(139,92,246,0.08)' }}>
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="#8b5cf6">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-            </svg>
+      {/* ─── Header ─── */}
+      <div className="px-5 pt-5 pb-3 shrink-0">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h2 className="text-lg font-bold text-gray-900 tracking-tight">Chats</h2>
+            <p className="text-[11px] text-gray-400 font-medium mt-0.5">{contacts.length} conversation{contacts.length !== 1 ? 's' : ''}</p>
           </div>
-          <h3 className="text-lg font-bold text-slate-700 mb-2">No data yet</h3>
-          <p className="text-xs mt-1 max-w-[200px]" style={{ color: '#94a3b8' }}>
-            There are no active chats. Start by adding a new recipient.
-          </p>
           {onShowAddModal && (
-            <button
+            <motion.button
               onClick={onShowAddModal}
-              className="mt-6 flex items-center justify-center px-4 py-2 text-sm font-semibold text-white rounded-lg transition-transform hover:-translate-y-0.5 w-full"
-              style={{ background: '#8b5cf6' }}
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.95 }}
+              className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#25D366] to-[#1ebe5d] text-white flex items-center justify-center hover:shadow-lg shadow-md shadow-green-600/20 transition-shadow"
             >
-              Add Recipient
-            </button>
+              <Plus size={16} strokeWidth={2.5} />
+            </motion.button>
           )}
         </div>
-      ) : (
-        <div>
-          {[...contacts]
-            .sort((a, b) => {
-              const aUnread = unreadCounts[a.phoneNumber.replace(/^\+/, '')] || 0;
-              const bUnread = unreadCounts[b.phoneNumber.replace(/^\+/, '')] || 0;
-              return bUnread - aUnread;
-            })
-            .map(contact => {
-            const lastMessage = getLastMessage(contact.phoneNumber);
-            const isSelected = selectedContact?.id === contact.id;
-            const isDeleting = deleteConfirmId === contact.id;
-            const isEditing = editingContact?.id === contact.id;
-            const normalizedPhone = contact.phoneNumber.replace(/^\+/, '');
-            const unreadCount = unreadCounts[normalizedPhone] || 0;
-            const initials = contact.name
-              .split(' ')
-              .map(word => word.charAt(0).toUpperCase())
-              .slice(0, 2)
-              .join('');
-            const avatarColor = getAvatarColor(contact.name);
-            
-            return (
-              <motion.div
-                key={contact.id}
-                onClick={() => !isDeleting && !isEditing && onSelectContact(contact)}
-                className="group px-3 py-2.5 flex items-center cursor-pointer transition-all duration-150 border-b"
-                style={{
-                  borderColor: '#f1f5f9',
-                  background: isSelected ? 'rgba(139,92,246,0.08)' : 'transparent',
-                  borderLeft: isSelected ? '3px solid #8b5cf6' : '3px solid transparent',
-                }}
-                onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = '#f8fafc'; }}
-                onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
-                layout
+
+        {/* Search */}
+        <div className="relative">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search conversations..."
+            className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-[#F8FAFC] border border-gray-200/80 text-[13px] text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[#25D366] focus:ring-2 focus:ring-[#25D366]/10 transition-all"
+          />
+        </div>
+      </div>
+      
+      {/* ─── Contact List ─── */}
+      <div className="flex-1 overflow-y-auto">
+        {contacts.length === 0 ? (
+          <div className="flex flex-col items-center justify-center p-8 mt-6 text-center">
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5 bg-[#25D366]/[0.06]">
+              <MessageSquare size={28} className="text-[#25D366]" />
+            </div>
+            <h3 className="text-[16px] font-bold text-gray-900 mb-1.5">No conversations</h3>
+            <p className="text-[13px] text-gray-500 max-w-[220px] leading-relaxed">
+              Start by adding a new recipient to begin chatting.
+            </p>
+            {onShowAddModal && (
+              <button
+                onClick={onShowAddModal}
+                className="mt-5 flex items-center justify-center gap-2 px-5 py-2.5 text-[13px] font-bold text-white rounded-xl transition-all shadow-sm shadow-green-600/20 hover:shadow-md hover:-translate-y-0.5 bg-[#25D366] hover:bg-[#1db954]"
               >
-                {/* Avatar */}
-                <div 
-                  className="w-[46px] h-[46px] flex items-center justify-center rounded-xl text-white font-semibold text-[14px] mr-3 flex-shrink-0"
-                  style={{ backgroundColor: avatarColor, boxShadow: `0 4px 12px ${avatarColor}33` }}
+                <UserPlus size={16} /> Add Recipient
+              </button>
+            )}
+          </div>
+        ) : sortedContacts.length === 0 ? (
+          <div className="text-center py-12 text-sm text-gray-400">No results for &quot;{searchQuery}&quot;</div>
+        ) : (
+          <div className="py-1">
+            {sortedContacts.map((contact, idx) => {
+              const lastMessage = getLastMessage(contact.phoneNumber);
+              const isSelected = selectedContact?.id === contact.id;
+              const isDeleting = deleteConfirmId === contact.id;
+              const isEditing = editingContact?.id === contact.id;
+              const normalizedPhone = contact.phoneNumber.replace(/^\+/, '');
+              const unreadCount = unreadCounts[normalizedPhone] || 0;
+              const initials = contact.name.split(' ').map(word => word.charAt(0).toUpperCase()).slice(0, 2).join('');
+
+              return (
+                <motion.div
+                  key={contact.id}
+                  onClick={() => !isDeleting && !isEditing && onSelectContact(contact)}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.03 }}
+                  whileHover={!isSelected ? { y: -1, backgroundColor: 'rgba(248,250,252,0.9)' } : undefined}
+                  className={`group relative flex items-center px-4 py-3.5 cursor-pointer transition-all duration-200
+                    ${isSelected
+                      ? 'bg-[#25D366]/[0.08]'
+                      : 'hover:bg-[#F8FAFC]'}
+                  `}
+                  style={{
+                    borderLeft: isSelected ? '3px solid #25D366' : '3px solid transparent',
+                    boxShadow: isSelected ? 'inset 0 0 20px rgba(37,211,102,0.04)' : 'none',
+                  }}
+                  layout
                 >
-                  {initials}
-                </div>
-                
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-baseline">
-                    {isEditing ? (
-                      <div className="flex items-center gap-1.5 flex-1 mr-2" onClick={e => e.stopPropagation()}>
-                        <input
-                          type="text"
-                          value={editName}
-                          onChange={e => setEditName(e.target.value)}
-                          className="flex-1 text-sm px-2 py-1 rounded-lg border focus:outline-none"
-                          style={{ background: '#f8fafc', color: '#0f172a', borderColor: '#8b5cf6' }}
-                          autoFocus
-                          onKeyDown={e => {
-                            if (e.key === 'Enter') handleSaveEdit(e as unknown as React.MouseEvent);
-                            if (e.key === 'Escape') handleCancelEdit(e as unknown as React.MouseEvent);
-                          }}
-                        />
-                        <button onClick={handleSaveEdit} style={{ color: '#8b5cf6' }} className="p-0.5">
-                          <Check size={16} />
-                        </button>
-                        <button onClick={handleCancelEdit} style={{ color: '#94a3b8' }} className="p-0.5">
-                          <X size={16} />
-                        </button>
-                      </div>
-                    ) : (
-                      <h3 className="text-[14px] font-medium truncate" style={{ color: '#0f172a' }}>
-                        {contact.name}
-                      </h3>
-                    )}
-                    {!isEditing && (
-                      <div className="flex items-center gap-1.5 ml-2 flex-shrink-0">
-                        {lastMessage.time && (
-                          <span className="text-[11px]" style={{ color: unreadCount > 0 ? '#8b5cf6' : '#94a3b8' }}>
-                            {lastMessage.time}
-                          </span>
-                        )}
-                        {unreadCount > 0 && !isSelected && (
-                          <span
-                            className="unread-badge unread-badge-pulse inline-flex items-center justify-center text-[10px] font-bold text-white"
-                            style={{
-                              background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
-                              minWidth: '20px',
-                              height: '20px',
-                              borderRadius: '10px',
-                              padding: '0 5px',
-                              boxShadow: '0 2px 8px rgba(139, 92, 246, 0.4)',
-                            }}
-                          >
-                            {unreadCount > 99 ? '99+' : unreadCount}
-                          </span>
-                        )}
-                      </div>
-                    )}
+                  {/* Avatar with online dot */}
+                  <div className="relative mr-3 shrink-0">
+                    <motion.div
+                      className={`w-12 h-12 flex items-center justify-center rounded-full text-white font-bold text-[14px] shadow-sm
+                        ${isSelected ? 'bg-gradient-to-br from-[#25D366] to-[#128C7E] ring-2 ring-[#25D366]/20' : 'bg-gradient-to-br from-[#25D366] to-[#1ebe5d]'}
+                      `}
+                      whileHover={{ scale: 1.08 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                    >
+                      {initials}
+                    </motion.div>
+                    {/* Online indicator with pulse */}
+                    <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-[#25D366] border-[2.5px] border-white">
+                      <span className="absolute inset-0 rounded-full bg-[#25D366] animate-ping opacity-40" />
+                    </span>
                   </div>
 
-                  {/* Delete confirmation */}
-                  <AnimatePresence>
-                    {isDeleting ? (
-                      <motion.div 
-                        className="flex items-center gap-2 mt-1"
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                      >
-                        <span className="text-xs" style={{ color: '#ef4444' }}>Delete contact?</span>
-                        <button 
-                          onClick={(e) => handleConfirmDelete(e, contact.id)}
-                          className="text-xs text-white px-2.5 py-0.5 rounded-full transition-colors"
-                          style={{ background: '#ef4444' }}
-                        >
-                          Yes
-                        </button>
-                        <button 
-                          onClick={handleCancelDelete}
-                          className="text-xs px-2.5 py-0.5 rounded-full transition-colors"
-                          style={{ background: '#f1f5f9', color: '#64748b' }}
-                        >
-                          No
-                        </button>
-                      </motion.div>
-                    ) : (
-                      <div className="flex items-center mt-0.5 justify-between">
-                        <p className="text-[13px] truncate flex-1" style={{ color: '#94a3b8' }}>
-                          {lastMessage.text}
-                        </p>
-                        {/* Action buttons — visible on hover */}
-                        <div className="flex items-center gap-0.5 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button 
-                            onClick={(e) => handleStartEdit(e, contact)}
-                            className="p-1 rounded-lg transition-colors"
-                            style={{ color: '#94a3b8' }}
-                            onMouseEnter={e => { e.currentTarget.style.color = '#8b5cf6'; e.currentTarget.style.background = 'rgba(139,92,246,0.1)'; }}
-                            onMouseLeave={e => { e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.background = 'transparent'; }}
-                            title="Edit contact"
-                          >
-                            <Pencil size={13} />
-                          </button>
-                          <button 
-                            onClick={(e) => handleDeleteClick(e, contact.id)}
-                            className="p-1 rounded-lg transition-colors"
-                            style={{ color: '#94a3b8' }}
-                            onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = 'rgba(239,68,68,0.08)'; }}
-                            onMouseLeave={e => { e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.background = 'transparent'; }}
-                            title="Delete contact"
-                          >
-                            <Trash2 size={13} />
-                          </button>
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-baseline mb-0.5">
+                      {isEditing ? (
+                        <div className="flex items-center gap-1.5 flex-1 mr-2" onClick={e => e.stopPropagation()}>
+                          <input
+                            type="text"
+                            value={editName}
+                            onChange={e => setEditName(e.target.value)}
+                            className="flex-1 text-sm px-2.5 py-1.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-[#25D366]/30 focus:border-[#25D366] bg-white text-gray-900 border-gray-200"
+                            autoFocus
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') handleSaveEdit(e as unknown as React.MouseEvent);
+                              if (e.key === 'Escape') handleCancelEdit(e as unknown as React.MouseEvent);
+                            }}
+                          />
+                          <button onClick={handleSaveEdit} className="p-1 text-[#25D366] hover:bg-green-50 rounded-md transition-colors"><Check size={16} /></button>
+                          <button onClick={handleCancelEdit} className="p-1 text-gray-400 hover:bg-gray-100 rounded-md transition-colors"><X size={16} /></button>
                         </div>
-                      </div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
-      )}
+                      ) : (
+                        <h3 className={`text-[15px] truncate
+                          ${unreadCount > 0 ? 'font-bold text-gray-900' : 'font-semibold text-gray-800'}
+                        `}>
+                          {contact.name}
+                        </h3>
+                      )}
+                      {!isEditing && (
+                        <div className="flex items-center gap-1.5 ml-2 shrink-0">
+                          {lastMessage.time && (
+                            <span className={`text-[11px]
+                              ${unreadCount > 0 ? 'text-[#25D366] font-bold' : 'text-gray-400 font-medium'}
+                            `}>
+                              {lastMessage.time}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Delete confirmation vs Last Message */}
+                    <AnimatePresence mode="wait">
+                      {isDeleting ? (
+                        <motion.div
+                          key="deleting"
+                          className="flex items-center gap-2 mt-1"
+                          initial={{ opacity: 0, y: -4 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -4 }}
+                        >
+                          <span className="text-[12px] font-medium text-red-500">Delete?</span>
+                          <button onClick={(e) => handleConfirmDelete(e, contact.id)} className="text-[11px] font-bold text-white px-3 py-1 rounded-full bg-red-500 hover:bg-red-600 transition-colors">Yes</button>
+                          <button onClick={handleCancelDelete} className="text-[11px] font-bold px-3 py-1 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors">No</button>
+                        </motion.div>
+                      ) : (
+                        <motion.div key="message" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                            {/* Message type indicator */}
+                            {lastMessage.isTemplate ? (
+                              <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-[#25D366] bg-[#25D366]/[0.08] px-1.5 py-0.5 rounded-md shrink-0">
+                                <LayoutTemplate size={9} /> TPL
+                              </span>
+                            ) : lastMessage.text !== 'No messages yet' ? (
+                              <FileText size={12} className="text-gray-300 shrink-0" />
+                            ) : null}
+                            <p className={`text-[13px] truncate leading-relaxed
+                              ${unreadCount > 0 ? 'font-semibold text-gray-800' : 'text-gray-500'}
+                            `}>
+                              {lastMessage.text}
+                            </p>
+                          </div>
+
+                          {/* Unread Badge / Action Buttons */}
+                          <div className="flex items-center ml-2 h-5 shrink-0">
+                            {unreadCount > 0 && !isSelected ? (
+                              <motion.span
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                transition={{ type: 'spring', stiffness: 500, damping: 15 }}
+                                className="inline-flex items-center justify-center text-[10px] font-bold text-white bg-gradient-to-br from-[#25D366] to-[#1ebe5d] min-w-[20px] h-[20px] rounded-full px-1.5 shadow-md shadow-green-500/25"
+                              >
+                                {unreadCount > 99 ? '99+' : unreadCount}
+                              </motion.span>
+                            ) : (
+                              <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onClick={(e) => handleStartEdit(e, contact)} className="p-1 rounded-md text-gray-400 hover:text-[#25D366] hover:bg-[#25D366]/10 transition-all hover:scale-110" title="Edit"><Pencil size={13} /></button>
+                                <button onClick={(e) => handleDeleteClick(e, contact.id)} className="p-1 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all hover:scale-110" title="Delete"><Trash2 size={13} /></button>
+                              </div>
+                            )}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

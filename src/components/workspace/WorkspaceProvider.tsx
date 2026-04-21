@@ -200,7 +200,8 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const isPhoneVisibleInActiveWorkspace = useCallback((phone: string): boolean => {
     const normalized = normalizePhone(phone);
     const contact = state.contacts.find(c => normalizePhone(c.phoneNumber) === normalized);
-    if (!contact) return true;
+    // STRICT WORKSPACE ISOLATION: if no matching contact, hide it (no cross-workspace leakage)
+    if (!contact) return false;
     return contact.workspaceId === state.activeWorkspaceId;
   }, [state.contacts, state.activeWorkspaceId]);
 

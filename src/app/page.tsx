@@ -1,194 +1,764 @@
-import React from 'react';
+'use client';
+
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { MessageSquare, Users2, BarChart3, Zap, Shield, Globe } from 'lucide-react';
+import { motion, useInView } from 'framer-motion';
+import {
+  MessageSquare, Users, BarChart3, Zap, Shield, Globe, ArrowRight, Play,
+  Link2, ClipboardList, Rocket, Cloud, Smartphone, User, ChevronRight,
+  ShoppingCart, Truck, Building2, Heart, Lock, Eye, MousePointerClick,
+  TrendingUp, CheckCircle2, Workflow, FileText, Bot, CreditCard, Radio,
+  Store, Package, Landmark, Activity, Send, Twitter, Linkedin, Youtube, Mail,
+} from 'lucide-react';
+import ChatMockup from '@/components/landing/ChatMockup';
 
-export default function LandingPage() {
+/* ─── ANIMATED COUNTER ─── */
+function AnimatedCounter({ target, suffix = '' }: { target: number; suffix?: string }) {
+  const [count, setCount] = useState(0);
+  const ref = useRef<HTMLSpanElement>(null);
+  const inView = useInView(ref, { once: true, margin: '-50px' });
+
+  useEffect(() => {
+    if (!inView) return;
+    let start = 0;
+    const duration = 2000;
+    const step = Math.ceil(target / (duration / 16));
+    const timer = setInterval(() => {
+      start += step;
+      if (start >= target) { setCount(target); clearInterval(timer); }
+      else setCount(start);
+    }, 16);
+    return () => clearInterval(timer);
+  }, [inView, target]);
+
+  return <span ref={ref}>{count.toLocaleString()}{suffix}</span>;
+}
+
+/* ─── SCROLL REVEAL WRAPPER ─── */
+function Reveal({ children, delay = 0, className = '' }: { children: React.ReactNode; delay?: number; className?: string }) {
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-blue-200">
-      {/* Navbar */}
-      <nav className="sticky top-0 z-50 backdrop-blur-md bg-white/80 border-b border-slate-100 transition-all">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-sm">
-              <MessageSquare size={18} strokeWidth={2.5} />
-            </div>
-            <span className="font-bold text-xl tracking-tight text-slate-900">WhatZupp</span>
-          </div>
-          
-          <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
-            <a href="#features" className="hover:text-blue-600 transition-colors">Features</a>
-            <a href="#pricing" className="hover:text-blue-600 transition-colors">Pricing</a>
-            <a href="#about" className="hover:text-blue-600 transition-colors">About</a>
-          </div>
-          
-          <div className="flex items-center gap-4">
-            <Link href="/login" className="text-sm font-medium text-slate-700 hover:text-blue-600 transition-colors">
-              Login
-            </Link>
-            <Link href="/signup" className="text-sm font-medium bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-sm shadow-blue-600/20">
-              Get Started
-            </Link>
-          </div>
-        </div>
-      </nav>
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-60px' }}
+      transition={{ duration: 0.6, delay, ease: [0.22, 1, 0.36, 1] }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+}
 
-      {/* Hero Section */}
-      <section className="pt-32 pb-24 px-6 relative overflow-hidden">
-        {/* Subtle background glow */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-500/10 blur-[120px] rounded-full pointer-events-none -z-10" />
-        
-        <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight text-slate-900 mb-6 leading-tight">
-            Enterprise WhatsApp Engagement, <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Simplified.</span>
+/* ─── TAG PILL ─── */
+function Tag({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-2 bg-[#25D366]/[0.07] border border-[#25D366]/15 text-[#128C7E] font-[Syne] text-[11px] font-semibold tracking-[0.12em] uppercase px-4 py-1.5 rounded-full">
+      <span className="w-1.5 h-1.5 bg-[#25D366] rounded-full animate-pulse" />
+      {children}
+    </span>
+  );
+}
+
+/* ─── GLASS CARD ─── */
+function GlassCard({ children, className = '', hover = true }: { children: React.ReactNode; className?: string; hover?: boolean }) {
+  return (
+    <motion.div
+      whileHover={hover ? { y: -6, scale: 1.01 } : {}}
+      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+      className={`bg-white/60 backdrop-blur-xl border border-white/30 shadow-lg shadow-black/[0.03] rounded-3xl ${className}`}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+/* ════════════════════════════════════════════
+   NAVBAR
+   ════════════════════════════════════════════ */
+function Navbar() {
+  return (
+    <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-2xl bg-white/70 border-b border-gray-100/80">
+      <div className="max-w-[1200px] mx-auto px-6 h-16 flex items-center justify-between">
+        <Link href="/" className="flex items-center gap-2.5 no-underline">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#25D366] to-[#128C7E] flex items-center justify-center shadow-md shadow-green-600/20">
+            <MessageSquare size={18} className="text-white" />
+          </div>
+          <span className="font-[Syne] font-extrabold text-xl text-gray-900">WhatZupp</span>
+        </Link>
+        <div className="hidden md:flex items-center gap-9">
+          {['Features', 'How It Works', 'Use Cases', 'Analytics'].map((item, i) => (
+            <a key={i} href={`#${item.toLowerCase().replace(/ /g, '-')}`} className="text-sm text-gray-500 hover:text-gray-900 transition-colors no-underline font-medium">
+              {item}
+            </a>
+          ))}
+        </div>
+        <div className="flex items-center gap-3">
+          <Link href="/login" className="px-5 py-2.5 rounded-full text-sm font-medium text-gray-600 border border-gray-200 hover:border-gray-300 hover:text-gray-900 transition-all no-underline">
+            Login
+          </Link>
+          <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+            <Link href="/signup" className="px-5 py-2.5 rounded-full text-sm font-semibold text-white bg-gradient-to-r from-[#25D366] to-[#128C7E] shadow-md shadow-green-600/20 hover:shadow-lg hover:shadow-green-600/30 transition-all no-underline block">
+              Get Started Free
+            </Link>
+          </motion.div>
+        </div>
+      </div>
+    </nav>
+  );
+}
+
+/* ════════════════════════════════════════════
+   HERO
+   ════════════════════════════════════════════ */
+function Hero() {
+  const headlineWords = ['Turn', 'WhatsApp', 'Into', 'Your', 'Most'];
+  const gradientWords = ['Powerful', 'Engagement'];
+
+  return (
+    <section className="min-h-screen flex items-center pt-28 pb-20 px-6 relative overflow-hidden">
+      {/* ─── Background: Gradient Mesh + Glowing Blobs ─── */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: `
+            radial-gradient(ellipse at 20% 0%, rgba(37,211,102,0.08) 0%, transparent 50%),
+            radial-gradient(ellipse at 80% 20%, rgba(18,140,126,0.06) 0%, transparent 45%),
+            radial-gradient(ellipse at 60% 80%, rgba(37,211,102,0.04) 0%, transparent 50%),
+            radial-gradient(ellipse at 10% 60%, rgba(59,130,246,0.03) 0%, transparent 40%),
+            linear-gradient(180deg, #ffffff 0%, #f8fafb 40%, #f1f5f0 70%, #f8fafc 100%)
+          `,
+        }}
+      />
+      {/* Animated glowing blobs */}
+      <motion.div
+        animate={{ x: [0, 30, 0], y: [0, -20, 0], scale: [1, 1.1, 1] }}
+        transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
+        className="absolute top-[-10%] left-[15%] w-[500px] h-[500px] rounded-full pointer-events-none"
+        style={{ background: 'radial-gradient(circle, rgba(37,211,102,0.1) 0%, transparent 65%)', filter: 'blur(60px)' }}
+      />
+      <motion.div
+        animate={{ x: [0, -25, 0], y: [0, 25, 0], scale: [1, 1.05, 1] }}
+        transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
+        className="absolute top-[30%] right-[-5%] w-[400px] h-[400px] rounded-full pointer-events-none"
+        style={{ background: 'radial-gradient(circle, rgba(59,130,246,0.06) 0%, transparent 65%)', filter: 'blur(50px)' }}
+      />
+      <motion.div
+        animate={{ x: [0, 15, 0], y: [0, -15, 0] }}
+        transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut', delay: 4 }}
+        className="absolute bottom-[5%] left-[40%] w-[350px] h-[350px] rounded-full pointer-events-none"
+        style={{ background: 'radial-gradient(circle, rgba(37,211,102,0.06) 0%, transparent 60%)', filter: 'blur(40px)' }}
+      />
+      {/* Bottom gradient line */}
+      <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-[#25D366]/20 to-transparent" />
+
+      <div className="max-w-[1200px] mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-12 items-center relative">
+        {/* ─── Left: Text Content ─── */}
+        <div>
+          {/* Tag */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <Tag>WhatsApp × Salesforce Marketing Cloud</Tag>
+          </motion.div>
+
+          {/* Headline with staggered word animation */}
+          <h1 className="font-[Syne] text-[clamp(36px,5vw,64px)] font-extrabold leading-[1.05] tracking-tight text-gray-900 mt-7 mb-7">
+            {headlineWords.map((word, i) => (
+              <motion.span
+                key={word}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 + i * 0.06, ease: [0.22, 1, 0.36, 1] }}
+                className="inline-block mr-[0.3em]"
+              >
+                {word}
+              </motion.span>
+            ))}
+            <br />
+            {gradientWords.map((word, i) => (
+              <motion.span
+                key={word}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.45 + i * 0.1, ease: [0.22, 1, 0.36, 1] }}
+                className="inline-block mr-[0.3em] bg-gradient-to-r from-[#25D366] via-[#1ebe5d] to-[#0e8c5f] bg-clip-text text-transparent"
+              >
+                {word}
+              </motion.span>
+            ))}
+            <motion.span
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.7, ease: [0.22, 1, 0.36, 1] }}
+              className="inline-block"
+            >
+              Channel
+            </motion.span>
           </h1>
-          <p className="text-lg md:text-xl text-slate-600 mb-10 max-w-2xl mx-auto leading-relaxed">
-            Manage multiple workspaces, contacts, and high-volume messaging campaigns from one powerful, secure platform.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href="/signup" className="w-full sm:w-auto px-8 py-3.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-all shadow-sm shadow-blue-600/20 text-center">
-              Start Free Trial
-            </Link>
-            <button className="w-full sm:w-auto px-8 py-3.5 bg-white text-slate-700 font-medium rounded-lg border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-all text-center">
-              Watch Demo
-            </button>
-          </div>
+
+          {/* Subtext */}
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            className="text-lg text-gray-500 max-w-[480px] leading-relaxed mb-10"
+          >
+            Run campaigns, send transactional messages, and enable real-time conversations — directly from Salesforce Marketing Cloud.
+          </motion.p>
+
+          {/* Buttons */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            className="flex gap-4 flex-wrap"
+          >
+            {/* Primary — Gradient Green with Glow */}
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>
+              <Link
+                href="/signup"
+                className="px-9 py-4 rounded-full text-base font-semibold text-white no-underline flex items-center gap-2.5 transition-all"
+                style={{
+                  background: 'linear-gradient(135deg, #25D366 0%, #1ebe5d 50%, #128C7E 100%)',
+                  boxShadow: '0 4px 20px rgba(37,211,102,0.35), 0 1px 4px rgba(37,211,102,0.2)',
+                }}
+              >
+                <Rocket size={18} /> Request Demo
+              </Link>
+            </motion.div>
+            {/* Secondary — Glass Button */}
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>
+              <a
+                href="#how-it-works"
+                className="px-9 py-4 rounded-full text-base font-medium text-gray-700 no-underline flex items-center gap-2.5 transition-all hover:text-[#128C7E]"
+                style={{
+                  background: 'rgba(255,255,255,0.6)',
+                  backdropFilter: 'blur(12px)',
+                  border: '1px solid rgba(229,231,235,0.8)',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                }}
+              >
+                <Play size={16} /> See How It Works
+              </a>
+            </motion.div>
+          </motion.div>
+
+          {/* Trust Badges */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.75, ease: [0.22, 1, 0.36, 1] }}
+            className="mt-12"
+          >
+            {/* Company logo row */}
+            <div className="flex items-center gap-6 mb-5">
+              {['Salesforce', 'Meta', 'Shopify', 'HubSpot', 'Stripe'].map((name, i) => (
+                <motion.div
+                  key={name}
+                  initial={{ opacity: 0.4 }}
+                  whileHover={{ opacity: 1, scale: 1.05 }}
+                  className="text-[13px] font-bold tracking-tight cursor-default transition-all"
+                  style={{ color: '#9ca3af', fontFamily: "'Syne', sans-serif" }}
+                >
+                  {name}
+                </motion.div>
+              ))}
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="flex -space-x-2.5">
+                {['#6366f1', '#f59e0b', '#ef4444', '#10b981', '#3b82f6'].map((c, i) => (
+                  <span
+                    key={i}
+                    className="w-8 h-8 rounded-full border-[2.5px] border-white flex items-center justify-center text-white text-[10px] font-bold shadow-md"
+                    style={{ background: c }}
+                  >
+                    {['A', 'B', 'C', 'D', 'E'][i]}
+                  </span>
+                ))}
+              </div>
+              <p className="text-sm text-gray-500">
+                Trusted by <strong className="text-gray-900">200+ enterprise teams</strong>
+              </p>
+            </div>
+          </motion.div>
         </div>
 
-        {/* Hero Mockup */}
-        <div className="max-w-5xl mx-auto mt-20 relative">
-          <div className="rounded-2xl border border-slate-200/60 bg-white/50 backdrop-blur-sm p-2 shadow-2xl shadow-blue-900/5">
-            <div className="rounded-xl overflow-hidden bg-white border border-slate-100 flex h-[400px] shadow-sm">
-              {/* Fake Sidebar */}
-              <div className="w-16 border-r border-slate-100 bg-slate-50 flex flex-col items-center py-4 gap-6 shrink-0">
-                <div className="w-8 h-8 rounded bg-blue-100 text-blue-600 flex items-center justify-center mb-4"><MessageSquare size={16} /></div>
-                <div className="w-8 h-8 rounded bg-blue-600 text-white flex items-center justify-center shadow-sm"><Users2 size={16} /></div>
-                <div className="w-8 h-8 rounded text-slate-400 flex items-center justify-center"><BarChart3 size={16} /></div>
-                <div className="w-8 h-8 rounded text-slate-400 flex items-center justify-center"><Zap size={16} /></div>
+        {/* ─── Right: Premium Chat Mockup ─── */}
+        <motion.div
+          initial={{ opacity: 0, y: 40, rotateY: -5 }}
+          animate={{ opacity: 1, y: 0, rotateY: 0 }}
+          transition={{ duration: 0.8, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+          className="flex justify-center items-center lg:order-last order-first"
+          style={{ perspective: '1000px' }}
+        >
+          <ChatMockup />
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+/* ════════════════════════════════════════════
+   ECOSYSTEM FLOW
+   ════════════════════════════════════════════ */
+function EcosystemFlow() {
+  const nodes = [
+    { icon: <Cloud size={22} />, name: 'Data Cloud' },
+    { icon: <Radio size={22} />, name: 'SFMC' },
+    { icon: <MessageSquare size={22} />, name: 'WhatZupp', highlight: true },
+    { icon: <Smartphone size={22} />, name: 'WhatsApp' },
+    { icon: <User size={22} />, name: 'Customer' },
+  ];
+  return (
+    <section className="py-14 border-y border-gray-100/80 bg-gray-50/30">
+      <div className="max-w-[1160px] mx-auto px-6">
+        <p className="text-center text-xs text-gray-400 tracking-[0.08em] uppercase mb-8 font-medium">Enterprise Ecosystem Flow</p>
+        <div className="flex items-center justify-center gap-0 flex-wrap">
+          {nodes.map((n, i) => (
+            <React.Fragment key={i}>
+              <Reveal delay={i * 0.1}>
+                <div className="flex flex-col items-center gap-2">
+                  <motion.div
+                    whileHover={{ y: -4, scale: 1.05 }}
+                    className={`w-16 h-16 rounded-2xl border flex items-center justify-center transition-all ${
+                      n.highlight
+                        ? 'bg-[#25D366]/10 border-[#25D366]/30 text-[#25D366]'
+                        : 'bg-white/80 backdrop-blur border-gray-100 text-gray-600 hover:border-[#25D366]/20 hover:text-[#25D366]'
+                    }`}
+                  >
+                    {n.icon}
+                  </motion.div>
+                  <span className="text-xs text-gray-500 font-medium">{n.name}</span>
+                </div>
+              </Reveal>
+              {i < nodes.length - 1 && (
+                <div className="w-10 md:w-14 h-px bg-gradient-to-r from-[#25d366]/20 to-[#25d366]/40 relative mx-1">
+                  <ChevronRight size={10} className="text-[#25D366] absolute right-0 top-1/2 -translate-y-1/2" />
+                </div>
+              )}
+            </React.Fragment>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ════════════════════════════════════════════
+   STATS BAR
+   ════════════════════════════════════════════ */
+function StatsBar() {
+  const stats = [
+    { val: 50, suffix: 'K+', label: 'Businesses', icon: <Building2 size={20} /> },
+    { val: 2, suffix: 'B+', label: 'Messages Sent', icon: <Send size={20} /> },
+    { val: 99, suffix: '.9%', label: 'Uptime', icon: <Activity size={20} /> },
+    { val: 4, suffix: '.8/5', label: 'Rating', icon: <TrendingUp size={20} /> },
+  ];
+  return (
+    <section className="py-16 bg-white border-b border-gray-100/80">
+      <div className="max-w-[1160px] mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8">
+        {stats.map((s, i) => (
+          <Reveal key={i} delay={i * 0.1}>
+            <div className="text-center group">
+              <div className="w-12 h-12 rounded-2xl bg-[#25D366]/[0.06] flex items-center justify-center mx-auto mb-3 text-[#25D366] group-hover:bg-[#25D366]/10 transition-colors">
+                {s.icon}
               </div>
-              {/* Fake Content */}
-              <div className="flex-1 p-8 bg-slate-50/50">
-                <div className="h-8 w-48 bg-slate-200 rounded-md mb-8 animate-pulse" />
-                <div className="grid grid-cols-3 gap-6">
-                  <div className="h-32 bg-white rounded-xl border border-slate-100 shadow-sm p-6">
-                     <div className="h-4 w-24 bg-slate-100 rounded mb-4" />
-                     <div className="h-8 w-16 bg-slate-200 rounded" />
-                  </div>
-                  <div className="h-32 bg-white rounded-xl border border-slate-100 shadow-sm p-6">
-                     <div className="h-4 w-24 bg-slate-100 rounded mb-4" />
-                     <div className="h-8 w-16 bg-slate-200 rounded" />
-                  </div>
-                  <div className="h-32 bg-white rounded-xl border border-slate-100 shadow-sm p-6">
-                     <div className="h-4 w-24 bg-slate-100 rounded mb-4" />
-                     <div className="h-8 w-16 bg-slate-200 rounded" />
-                  </div>
+              <span className="font-[Syne] text-4xl font-extrabold text-[#25D366]">
+                <AnimatedCounter target={s.val} suffix={s.suffix} />
+              </span>
+              <p className="text-sm text-gray-500 font-medium mt-1">{s.label}</p>
+            </div>
+          </Reveal>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ════════════════════════════════════════════
+   FEATURES
+   ════════════════════════════════════════════ */
+function Features() {
+  const features = [
+    { icon: <Link2 size={24} />, color: 'text-[#25D366] bg-[#25D366]/[0.06]', num: '01', title: 'Direct SFMC Integration', desc: 'Seamless WhatsApp campaign execution directly from SFMC journeys. No middleware, no duplication.', pills: ['Journey Builder', 'Automation Studio', 'Email Studio'] },
+    { icon: <Eye size={24} />, color: 'text-blue-500 bg-blue-50', num: '02', title: 'Unified Campaign Governance', desc: 'Centralized control for marketing + utility messaging. Full visibility, approval workflows, and audit trails.', pills: ['Approval Workflows', 'Audit Logs', 'Role Controls'] },
+    { icon: <Lock size={24} />, color: 'text-indigo-500 bg-indigo-50', num: '03', title: 'No-PII Architecture', desc: 'WhatZupp acts as an orchestration layer — never storing customer PII. Enterprise compliance by design.', pills: ['GDPR Ready', 'Zero Data Copy', 'SOC 2'] },
+    { icon: <Building2 size={24} />, color: 'text-pink-500 bg-pink-50', num: '04', title: 'Multi-Brand Scalability', desc: 'Single integration layer supporting multiple business units, brands, and regions at scale.', pills: ['Multi-Tenant', 'Region Isolation', 'Centralized Billing'] },
+    { icon: <BarChart3 size={24} />, color: 'text-amber-500 bg-amber-50', num: '05', title: 'Real-Time Analytics', desc: 'Delivery, read, and engagement metrics inside SFMC or your BI tools. Close the loop in real time.', pills: ['Live Dashboards', 'Tableau Ready', 'SFMC Native'] },
+    { icon: <MessageSquare size={24} />, color: 'text-emerald-500 bg-emerald-50', num: '06', title: 'Two-Way Messaging', desc: 'Enable real conversations within campaign journeys. Customers respond, ask questions, and get answers.', pills: ['Inbound Handling', 'Bot + Human', 'Session Tracking'] },
+  ];
+
+  return (
+    <section id="features" className="py-24 px-6 bg-gradient-to-b from-white to-gray-50/30">
+      <div className="max-w-[1160px] mx-auto">
+        <Reveal className="text-center mb-20">
+          <Tag>Core Capabilities</Tag>
+          <h2 className="font-[Syne] text-[clamp(32px,4vw,52px)] font-bold leading-tight tracking-tight text-gray-900 mt-5 mb-4">
+            Built for Enterprise-Grade<br />Engagement
+          </h2>
+          <p className="text-[17px] text-gray-500 max-w-[540px] mx-auto leading-relaxed">
+            Every feature designed for scale, compliance, and conversion.
+          </p>
+        </Reveal>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {features.map((f, i) => (
+            <Reveal key={i} delay={i * 0.08}>
+              <GlassCard className="p-8 h-full">
+                <div className={`w-12 h-12 rounded-2xl ${f.color} flex items-center justify-center mb-5`}>
+                  {f.icon}
+                </div>
+                <span className="font-[Syne] text-xs font-bold text-[#25D366] tracking-[0.1em] block mb-2">{f.num}</span>
+                <h3 className="font-[Syne] text-xl font-bold text-gray-900 mb-3">{f.title}</h3>
+                <p className="text-sm text-gray-500 leading-relaxed mb-5">{f.desc}</p>
+                <div className="flex flex-wrap gap-2">
+                  {f.pills.map((p, j) => (
+                    <span key={j} className="bg-[#25D366]/[0.05] border border-[#25D366]/10 text-[#128C7E] px-3 py-1 rounded-full text-[11px] font-medium">{p}</span>
+                  ))}
+                </div>
+              </GlassCard>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ════════════════════════════════════════════
+   HOW IT WORKS
+   ════════════════════════════════════════════ */
+function HowItWorks() {
+  const steps = [
+    { icon: <Link2 size={28} />, num: '1', title: 'Connect SFMC', desc: 'Install the WhatZupp connector. Authenticate with your SFMC credentials. Done in under 10 minutes.' },
+    { icon: <ClipboardList size={28} />, num: '2', title: 'Sync Meta Templates', desc: 'Connect Meta Business Manager. Templates auto-import, get validated, and are ready for SFMC journeys.' },
+    { icon: <Rocket size={28} />, num: '3', title: 'Launch & Track', desc: 'Fire your first WhatsApp campaign. Track delivery, reads, and engagement inside existing dashboards.' },
+  ];
+  return (
+    <section id="how-it-works" className="py-24 px-6 bg-gray-50/30">
+      <div className="max-w-[1160px] mx-auto">
+        <Reveal className="text-center mb-16">
+          <Tag>Simple Setup</Tag>
+          <h2 className="font-[Syne] text-[clamp(32px,4vw,52px)] font-bold leading-tight tracking-tight text-gray-900 mt-5 mb-4">Up and Running<br />in Three Steps</h2>
+          <p className="text-[17px] text-gray-500 mx-auto max-w-[480px]">From integration to first campaign in days, not months.</p>
+        </Reveal>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
+          <div className="hidden md:block absolute top-[55px] left-[calc(16.67%+28px)] right-[calc(16.67%+28px)] h-0.5 bg-gradient-to-r from-[#25D366]/40 via-blue-400/30 to-[#25D366]/40" />
+          {steps.map((s, i) => (
+            <Reveal key={i} delay={i * 0.15}>
+              <GlassCard className="p-9 text-center relative h-full">
+                <div className="w-20 h-20 rounded-3xl bg-[#25D366]/[0.06] border border-[#25D366]/15 mx-auto mb-5 flex items-center justify-center text-[#25D366] relative">
+                  {s.icon}
+                  <span className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full bg-[#25D366] text-[11px] font-[Syne] font-extrabold text-white flex items-center justify-center shadow-md shadow-green-600/20">{s.num}</span>
+                </div>
+                <h3 className="font-[Syne] text-xl font-bold text-gray-900 mb-3">{s.title}</h3>
+                <p className="text-sm text-gray-500 leading-relaxed">{s.desc}</p>
+              </GlassCard>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ════════════════════════════════════════════
+   USE CASES
+   ════════════════════════════════════════════ */
+function UseCases() {
+  const cases = [
+    {
+      icon: <ShoppingCart size={32} />, iconColor: 'text-[#25D366] bg-[#25D366]/10',
+      tag: 'E-Commerce', tagColor: 'bg-[#25D366]/10 text-[#128C7E]', borderColor: 'from-[#25D366] to-emerald-400',
+      title: 'From Browse to Buy to Repeat',
+      desc: 'Drive purchase completion and loyalty with perfectly timed WhatsApp touchpoints.',
+      msgs: [
+        { sender: 'ShopNow', text: 'Hey Sarah! You left 2 items in your cart. Get 10% off if you complete your order in 2 hours!' },
+        { sender: 'ShopNow', text: 'Order confirmed! Your Nike Air Max will arrive by Thursday. Track → bit.ly/track123' },
+      ],
+    },
+    {
+      icon: <Truck size={32} />, iconColor: 'text-orange-500 bg-orange-50',
+      tag: 'Logistics', tagColor: 'bg-orange-50 text-orange-600', borderColor: 'from-orange-500 to-amber-400',
+      title: 'Real-Time Delivery Intelligence',
+      desc: 'Keep customers informed at every milestone — from dispatch to doorstep.',
+      msgs: [
+        { sender: 'FastShip', text: 'Your package has been dispatched from our Mumbai hub. ETA: Tomorrow, 10 AM – 2 PM' },
+        { sender: 'FastShip', text: 'Out for delivery now! Driver is 3 stops away. [Live Track]' },
+      ],
+    },
+    {
+      icon: <Landmark size={32} />, iconColor: 'text-indigo-500 bg-indigo-50',
+      tag: 'BFSI', tagColor: 'bg-indigo-50 text-indigo-600', borderColor: 'from-indigo-500 to-purple-500',
+      title: 'Secure, Compliant Notifications',
+      desc: 'OTPs, fraud alerts, transaction confirmations — instantly on WhatsApp.',
+      msgs: [
+        { sender: 'SecureBank', text: 'Your OTP for login is 847291. Valid for 10 minutes. Never share this.' },
+        { sender: 'SecureBank', text: 'New login detected from Delhi. Was this you? [Yes] [No — Secure Account]' },
+      ],
+    },
+    {
+      icon: <Heart size={32} />, iconColor: 'text-pink-500 bg-pink-50',
+      tag: 'Healthcare', tagColor: 'bg-pink-50 text-pink-600', borderColor: 'from-pink-400 to-rose-500',
+      title: 'Care That Shows Up On Time',
+      desc: 'Appointment reminders, prescription alerts, lab results, and follow-up care.',
+      msgs: [
+        { sender: 'CityCare', text: 'Reminder: Your appointment with Dr. Meera is tomorrow at 10:30 AM. [Confirm] [Reschedule]' },
+        { sender: 'CityCare', text: 'Your lab reports are ready. View securely → [Secure Link]' },
+      ],
+    },
+  ];
+
+  return (
+    <section id="use-cases" className="py-24 px-6 bg-white">
+      <div className="max-w-[1160px] mx-auto">
+        <Reveal className="text-center mb-16">
+          <Tag>Industry Stories</Tag>
+          <h2 className="font-[Syne] text-[clamp(32px,4vw,52px)] font-bold leading-tight tracking-tight text-gray-900 mt-5 mb-4">Built for Every<br />Customer Journey</h2>
+          <p className="text-[17px] text-gray-500 mx-auto max-w-[480px]">Real use cases across industries. Real results.</p>
+        </Reveal>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {cases.map((c, i) => (
+            <Reveal key={i} delay={i * 0.1}>
+              <GlassCard className="p-8 relative overflow-hidden group h-full">
+                <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${c.borderColor} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
+                <div className={`w-14 h-14 rounded-2xl ${c.iconColor} flex items-center justify-center mb-4`}>
+                  {c.icon}
+                </div>
+                <span className={`inline-block text-[11px] font-bold tracking-[0.1em] uppercase px-3 py-1 rounded-full mb-3 ${c.tagColor}`}>{c.tag}</span>
+                <h3 className="font-[Syne] text-xl font-bold text-gray-900 mb-3">{c.title}</h3>
+                <p className="text-sm text-gray-500 leading-relaxed mb-5">{c.desc}</p>
+                <div className="flex flex-col gap-2">
+                  {c.msgs.map((m, j) => (
+                    <div key={j} className="bg-gray-50/80 backdrop-blur border border-gray-100/80 rounded-xl px-4 py-3 text-[13px] leading-relaxed text-gray-700 hover:border-[#25d366]/20 transition-colors">
+                      <div className="flex items-center gap-2 mb-1">
+                        <CheckCircle2 size={12} className="text-[#25D366]" />
+                        <span className="text-[11px] font-bold text-[#128C7E]">{m.sender}</span>
+                      </div>
+                      {m.text}
+                    </div>
+                  ))}
+                </div>
+              </GlassCard>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ════════════════════════════════════════════
+   ANALYTICS DASHBOARD
+   ════════════════════════════════════════════ */
+function AnalyticsDashboard() {
+  const kpis = [
+    { label: 'Messages Sent', val: '4.8M', delta: '↑ 23% vs last period', color: 'text-gray-900', icon: <Send size={16} /> },
+    { label: 'Delivered', val: '4.72M', delta: '98.3% delivery rate', color: 'text-[#25D366]', icon: <CheckCircle2 size={16} /> },
+    { label: 'Read', val: '3.45M', delta: '73% read rate', color: 'text-blue-500', icon: <Eye size={16} /> },
+    { label: 'CTA Clicks', val: '1.65M', delta: '34.9% engagement', color: 'text-pink-500', icon: <MousePointerClick size={16} /> },
+  ];
+
+  return (
+    <section id="analytics" className="py-24 px-6 bg-gray-50/30">
+      <div className="max-w-[1160px] mx-auto">
+        <Reveal className="text-center mb-16">
+          <Tag>Data Intelligence</Tag>
+          <h2 className="font-[Syne] text-[clamp(32px,4vw,52px)] font-bold leading-tight tracking-tight text-gray-900 mt-5 mb-4">Measure What Matters</h2>
+          <p className="text-[17px] text-gray-500 mx-auto max-w-[540px]">Full visibility into every message, campaign, and interaction — in real time.</p>
+        </Reveal>
+
+        <Reveal>
+          <div className="bg-white/70 backdrop-blur-2xl border border-white/40 rounded-3xl overflow-hidden shadow-2xl shadow-black/[0.05]">
+            {/* Top bar */}
+            <div className="bg-gray-50/60 backdrop-blur px-6 py-4 border-b border-gray-100/80 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <BarChart3 size={18} className="text-[#25D366]" />
+                <span className="font-[Syne] font-bold text-base text-gray-900">WhatZupp Analytics Hub</span>
+              </div>
+              <div className="flex gap-2">
+                {['Today', '7 Days', '30 Days', 'Custom'].map((t, i) => (
+                  <button key={i} className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    i === 0 ? 'bg-[#25D366]/10 text-[#128C7E] border border-[#25D366]/20' : 'bg-white/80 border border-gray-100 text-gray-500 hover:border-gray-200'
+                  }`}>{t}</button>
+                ))}
+              </div>
+            </div>
+            {/* KPIs */}
+            <div className="p-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                {kpis.map((k, i) => (
+                  <motion.div
+                    key={i}
+                    whileHover={{ scale: 1.02 }}
+                    className="bg-white/60 backdrop-blur border border-gray-100/60 rounded-2xl p-5 hover:border-[#25D366]/20 transition-colors"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-gray-400">{k.icon}</span>
+                      <p className="text-xs text-gray-500">{k.label}</p>
+                    </div>
+                    <p className={`font-[Syne] text-3xl font-bold ${k.color}`}>{k.val}</p>
+                    <p className="text-xs text-[#25D366] mt-1 font-medium">{k.delta}</p>
+                  </motion.div>
+                ))}
+              </div>
+              {/* Chart */}
+              <div className="bg-white/60 backdrop-blur border border-gray-100/60 rounded-2xl p-5">
+                <p className="text-sm font-semibold text-gray-500 mb-4">Message Delivery Trend — Last 7 Days</p>
+                <div className="h-[120px] relative overflow-hidden">
+                  <svg viewBox="0 0 700 120" preserveAspectRatio="none" className="w-full h-full">
+                    <defs>
+                      <linearGradient id="lg1" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#25D366" stopOpacity="0.15" />
+                        <stop offset="100%" stopColor="#25D366" stopOpacity="0" />
+                      </linearGradient>
+                    </defs>
+                    <path d="M0,80 L100,70 L200,65 L300,55 L400,45 L500,35 L600,25 L700,20" stroke="#25D366" strokeWidth="2.5" fill="none" strokeLinejoin="round" />
+                    <path d="M0,80 L100,70 L200,65 L300,55 L400,45 L500,35 L600,25 L700,20 L700,120 L0,120 Z" fill="url(#lg1)" />
+                    <path d="M0,95 L100,85 L200,80 L300,72 L400,65 L500,55 L600,48 L700,42" stroke="#3B82F6" strokeWidth="2" strokeDasharray="5,3" fill="none" />
+                    <circle cx="700" cy="20" r="4" fill="#25D366" />
+                    <circle cx="700" cy="42" r="3.5" fill="#3B82F6" />
+                    {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d, i) => (
+                      <text key={i} x={i * 100} y={118} fill="#9CA3AF" fontSize="10">{d}</text>
+                    ))}
+                  </svg>
+                </div>
+                <div className="flex gap-5 mt-3">
+                  <div className="flex items-center gap-1.5 text-xs text-gray-500"><div className="w-5 h-0.5 bg-[#25D366] rounded" /> Sent</div>
+                  <div className="flex items-center gap-1.5 text-xs text-gray-500"><div className="w-5 h-0.5 bg-blue-500 rounded" style={{ borderTop: '2px dashed #3B82F6' }} /> Read</div>
                 </div>
               </div>
             </div>
           </div>
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
+/* ════════════════════════════════════════════
+   CTA
+   ════════════════════════════════════════════ */
+function CTASection() {
+  return (
+    <section className="py-28 px-6 bg-white">
+      <div className="max-w-[1160px] mx-auto">
+        <Reveal>
+          <div className="text-center bg-gradient-to-br from-[#25D366]/[0.04] to-blue-400/[0.03] border border-[#25D366]/10 rounded-[32px] px-8 md:px-16 py-20 relative overflow-hidden">
+            <div className="absolute top-[-40%] left-1/2 -translate-x-1/2 w-[500px] h-[400px] bg-[#25D366]/[0.06] rounded-full blur-[120px] pointer-events-none" />
+            <Tag>Get Started Today</Tag>
+            <h2 className="font-[Syne] text-[clamp(30px,4vw,52px)] font-extrabold tracking-tight text-gray-900 mt-6 mb-4 relative">Launch WhatsApp Campaigns<br />in Days, Not Months</h2>
+            <p className="text-lg text-gray-500 mb-10 max-w-[500px] mx-auto relative">Join hundreds of enterprise teams transforming engagement on the world&apos;s #1 messaging platform.</p>
+            <div className="flex gap-4 justify-center flex-wrap relative">
+              <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
+                <Link href="/signup" className="px-9 py-4 rounded-full text-base font-semibold text-white bg-gradient-to-r from-[#25D366] to-[#128C7E] shadow-lg shadow-green-600/25 transition-all no-underline flex items-center gap-2">
+                  <Rocket size={18} /> Request a Demo
+                </Link>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
+                <a href="#" className="px-9 py-4 rounded-full text-base font-medium text-gray-700 border border-gray-200 hover:border-[#25D366] hover:text-[#128C7E] transition-all no-underline flex items-center gap-2">
+                  <MessageSquare size={16} /> Talk to an Expert
+                </a>
+              </motion.div>
+            </div>
+            <div className="mt-10 flex justify-center gap-8 md:gap-12 flex-wrap relative">
+              {[
+                { val: 200, suffix: '+', label: 'Enterprise Clients' },
+                { val: 4, suffix: '.8B+', label: 'Messages Delivered' },
+                { val: 98, suffix: '.7%', label: 'Delivery Rate' },
+                { val: 99, suffix: '.9%', label: 'Platform Uptime' },
+              ].map((s, i) => (
+                <div key={i} className="text-center">
+                  <div className="font-[Syne] text-3xl font-extrabold text-[#25D366]">
+                    <AnimatedCounter target={s.val} suffix={s.suffix} />
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">{s.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
+/* ════════════════════════════════════════════
+   FOOTER
+   ════════════════════════════════════════════ */
+function Footer() {
+  const socialIcons = [
+    { icon: <Twitter size={16} />, href: '#' },
+    { icon: <Linkedin size={16} />, href: '#' },
+    { icon: <Youtube size={16} />, href: '#' },
+    { icon: <Mail size={16} />, href: '#' },
+  ];
+  return (
+    <footer className="bg-gray-50/50 border-t border-gray-100 pt-16 pb-10">
+      <div className="max-w-[1160px] mx-auto px-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
+          <div>
+            <Link href="/" className="flex items-center gap-2 mb-3 no-underline">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#25D366] to-[#128C7E] flex items-center justify-center shadow-sm">
+                <MessageSquare size={14} className="text-white" />
+              </div>
+              <span className="font-[Syne] font-extrabold text-lg text-gray-900">WhatZupp</span>
+            </Link>
+            <p className="text-sm text-gray-500 leading-relaxed max-w-[280px] mb-5">The enterprise WhatsApp engagement platform built natively for Salesforce Marketing Cloud.</p>
+            <div className="flex gap-2">
+              {socialIcons.map((s, i) => (
+                <a key={i} href={s.href} className="w-9 h-9 rounded-lg bg-white/80 backdrop-blur border border-gray-100 flex items-center justify-center text-gray-500 hover:bg-[#25D366]/5 hover:text-[#25D366] hover:border-[#25D366]/20 transition-all no-underline">
+                  {s.icon}
+                </a>
+              ))}
+            </div>
+          </div>
+          {[
+            { title: 'Product', links: ['Features', 'Integrations', 'Pricing', 'Changelog', 'Roadmap'] },
+            { title: 'Company', links: ['About', 'Blog', 'Careers', 'Press', 'Partners'] },
+            { title: 'Support', links: ['Documentation', 'API Reference', 'Status', 'Contact', 'Compliance'] },
+          ].map((col, i) => (
+            <div key={i}>
+              <h4 className="font-[Syne] text-xs font-bold tracking-[0.08em] uppercase text-gray-400 mb-4">{col.title}</h4>
+              <ul className="flex flex-col gap-2.5 list-none p-0 m-0">
+                {col.links.map((l, j) => (
+                  <li key={j}><a href="#" className="text-sm text-gray-500 hover:text-[#25D366] transition-colors no-underline">{l}</a></li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
-      </section>
-
-      {/* Stats Bar */}
-      <section className="bg-slate-900 py-16 border-y border-slate-800">
-        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-8 text-center divide-y md:divide-y-0 md:divide-x divide-slate-800">
-          <div className="flex flex-col items-center pt-8 md:pt-0">
-            <span className="text-4xl font-bold text-white mb-2">10,000+</span>
-            <span className="text-slate-400 font-medium">Businesses</span>
-          </div>
-          <div className="flex flex-col items-center pt-8 md:pt-0">
-            <span className="text-4xl font-bold text-white mb-2">50M+</span>
-            <span className="text-slate-400 font-medium">Messages Sent</span>
-          </div>
-          <div className="flex flex-col items-center pt-8 md:pt-0">
-            <span className="text-4xl font-bold text-white mb-2">99.9%</span>
-            <span className="text-slate-400 font-medium">Uptime Guarantee</span>
+        <div className="border-t border-gray-100 pt-7 flex flex-col md:flex-row justify-between items-center gap-4">
+          <span className="text-xs text-gray-400">© {new Date().getFullYear()} WhatZupp by Pentacloud. All rights reserved.</span>
+          <div className="flex gap-5">
+            {['Privacy Policy', 'Terms of Service', 'Cookie Policy'].map((l, i) => (
+              <a key={i} href="#" className="text-xs text-gray-400 hover:text-gray-600 no-underline transition-colors">{l}</a>
+            ))}
           </div>
         </div>
-      </section>
+      </div>
+    </footer>
+  );
+}
 
-      {/* Features Section */}
-      <section id="features" className="py-24 px-6 bg-white">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">Everything you need to scale.</h2>
-            <p className="text-lg text-slate-600 max-w-2xl mx-auto">Purpose-built tools for enterprise teams to manage WhatsApp communications flawlessly.</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300 group">
-              <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 mb-6 group-hover:scale-110 transition-transform">
-                <Users2 size={24} />
-              </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-3">Multi-Workspace</h3>
-              <p className="text-slate-600 leading-relaxed">Isolate contacts, chats, and templates across different teams, brands, or regions seamlessly.</p>
-            </div>
-
-            <div className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300 group">
-              <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 mb-6 group-hover:scale-110 transition-transform">
-                <MessageSquare size={24} />
-              </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-3">Real-time Messaging</h3>
-              <p className="text-slate-600 leading-relaxed">Lightning-fast two-way messaging with rich media support and read receipts.</p>
-            </div>
-
-            <div className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300 group">
-              <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 mb-6 group-hover:scale-110 transition-transform">
-                <BarChart3 size={24} />
-              </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-3">Advanced Analytics</h3>
-              <p className="text-slate-600 leading-relaxed">Gain deep insights into your engagement rates, response times, and campaign performance.</p>
-            </div>
-
-            <div className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300 group">
-              <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 mb-6 group-hover:scale-110 transition-transform">
-                <Zap size={24} />
-              </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-3">Fast Reply Templates</h3>
-              <p className="text-slate-600 leading-relaxed">Save time with customizable fast replies and automated message templates.</p>
-            </div>
-
-            <div className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300 group">
-              <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-700 mb-6 group-hover:scale-110 transition-transform">
-                <Shield size={24} />
-              </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-3">Enterprise Security</h3>
-              <p className="text-slate-600 leading-relaxed">Bank-grade encryption and granular role-based access controls keep your data safe.</p>
-            </div>
-
-            <div className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300 group">
-              <div className="w-12 h-12 rounded-xl bg-cyan-50 flex items-center justify-center text-cyan-600 mb-6 group-hover:scale-110 transition-transform">
-                <Globe size={24} />
-              </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-3">SFMC Integration</h3>
-              <p className="text-slate-600 leading-relaxed">Natively sync with Salesforce Marketing Cloud for automated Journey Builder triggers.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Blue CTA Section */}
-      <section className="py-24 px-6 bg-gradient-to-br from-blue-600 to-indigo-700 text-center">
-        <div className="max-w-3xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">Ready to transform your messaging?</h2>
-          <p className="text-blue-100 text-lg mb-10">Join thousands of leading enterprises already using WhatZupp to engage their customers on WhatsApp.</p>
-          <Link href="/signup" className="inline-block px-8 py-4 bg-white text-blue-600 font-bold rounded-lg hover:bg-slate-50 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5">
-            Start Your Free Trial
-          </Link>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="bg-white border-t border-slate-200 py-12 px-6">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded bg-blue-600 flex items-center justify-center text-white">
-              <MessageSquare size={12} strokeWidth={3} />
-            </div>
-            <span className="font-bold text-slate-900 tracking-tight">WhatZupp</span>
-          </div>
-          <p className="text-slate-500 text-sm">© {new Date().getFullYear()} Pentacloud Consulting. All rights reserved.</p>
-        </div>
-      </footer>
+/* ════════════════════════════════════════════
+   PAGE
+   ════════════════════════════════════════════ */
+export default function LandingPage() {
+  return (
+    <div className="min-h-screen bg-white text-gray-900" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+      <Navbar />
+      <Hero />
+      <EcosystemFlow />
+      <StatsBar />
+      <Features />
+      <HowItWorks />
+      <UseCases />
+      <AnalyticsDashboard />
+      <CTASection />
+      <Footer />
     </div>
   );
 }

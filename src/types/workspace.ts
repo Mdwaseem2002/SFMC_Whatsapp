@@ -43,6 +43,8 @@ export type AppScreen =
   | 'dashboard'
   | 'chats'
   | 'contacts'
+  | 'templates'
+  | 'broadcasts'
   | 'analytics'
   | 'sfmc'
   | 'settings'
