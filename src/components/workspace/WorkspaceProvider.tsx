@@ -171,10 +171,23 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const updateContact = useCallback(async (id: string, updates: Partial<Omit<WorkspaceContact, 'id' | 'createdAt'>>) => {
-    setState(prev => ({
-      ...prev,
-      contacts: prev.contacts.map(c => c.id === id ? { ...c, ...updates } : c),
-    }));
+    try {
+      const res = await fetch('/api/user/contacts', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, ...updates })
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) throw new Error(json.error || 'Failed to update contact');
+      
+      setState(prev => ({
+        ...prev,
+        contacts: prev.contacts.map(c => c.id === id ? { ...c, ...updates } : c),
+      }));
+    } catch (e) {
+      console.error('Failed to update contact:', e);
+      throw e;
+    }
   }, []);
 
   const deleteContact = useCallback(async (id: string) => {
