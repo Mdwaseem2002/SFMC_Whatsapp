@@ -1,0 +1,35 @@
+import { NextRequest, NextResponse } from 'next/server';
+import connectMongoDB from '@/lib/mongodb';
+import { getSessionFromRequest } from '@/lib/auth';
+import AutomationExecution from '@/models/AutomationExecution';
+
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const session = await getSessionFromRequest(request);
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const { id } = await params;
+    await connectMongoDB();
+
+    const executions = await AutomationExecution.find({ journeyId: id, userId: session.userId })
+      .sort({ updatedAt: -1 })
+      .limit(100)
+      .lean();
+
+    return NextResponse.json({
+      success: true,
+      data: executions.map((doc: any) => ({
+        id: doc._id.toString(),
+        contactName: doc.contactName,
+        contactPhone: doc.contactPhone,
+        currentNodeId: doc.currentNodeId,
+        status: doc.status,
+        executeAt: doc.executeAt,
+        executionLog: doc.executionLog,
+        updatedAt: doc.updatedAt,
+      })),
+    });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}

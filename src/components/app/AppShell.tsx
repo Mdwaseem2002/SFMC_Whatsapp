@@ -5,7 +5,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { LogOut, LayoutDashboard, MessageSquare, Users2, BarChart3, Zap, Settings, Cloud, Bell, LayoutTemplate, Megaphone } from 'lucide-react';
+import { LogOut, LayoutDashboard, MessageSquare, Users2, BarChart3, Zap, Settings, Cloud, Bell, LayoutTemplate, Megaphone, Workflow } from 'lucide-react';
 import WorkspaceSwitcher from '@/components/workspace/WorkspaceSwitcher';
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider';
 import DashboardView from '@/components/app/DashboardView';
@@ -13,6 +13,7 @@ import ChatsView from '@/components/app/ChatsView';
 import ContactsView from '@/components/app/ContactsView';
 import TemplatesView from '@/components/app/TemplatesView';
 import BroadcastsView from '@/components/app/BroadcastsView';
+import AutomationView from '@/components/app/AutomationView';
 import AnalyticsView from '@/components/app/AnalyticsView';
 import SettingsView from '@/components/app/SettingsView';
 import FastReplyView from '@/components/app/FastReplyView';
@@ -25,6 +26,7 @@ const NAV_ITEMS: { key: AppScreen; label: string; icon: React.ReactNode }[] = [
   { key: 'contacts', label: 'Contacts', icon: <Users2 size={20} /> },
   { key: 'templates', label: 'Templates', icon: <LayoutTemplate size={20} /> },
   { key: 'broadcasts', label: 'Broadcasts', icon: <Megaphone size={20} /> },
+  { key: 'automation', label: 'Automation', icon: <Workflow size={20} /> },
   { key: 'analytics', label: 'Analytics', icon: <BarChart3 size={20} /> },
   { key: 'sfmc', label: 'SFMC', icon: <Cloud size={20} /> },
   { key: 'fast-reply', label: 'Fast Reply', icon: <Zap size={20} /> },
@@ -72,6 +74,7 @@ export default function AppShell() {
       case 'contacts': return <ContactsView />;
       case 'templates': return <TemplatesView />;
       case 'broadcasts': return <BroadcastsView />;
+      case 'automation': return <AutomationView />;
       case 'analytics': return <AnalyticsView />;
       case 'settings': return <SettingsView />;
       case 'sfmc': return <SFMCView />;

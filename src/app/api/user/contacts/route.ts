@@ -3,6 +3,33 @@ import connectMongoDB from '@/lib/mongodb';
 import { getSessionFromRequest } from '@/lib/auth';
 import WorkspaceContact from '@/models/WorkspaceContact';
 
+export async function GET(request: NextRequest) {
+  try {
+    const session = await getSessionFromRequest(request);
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const { searchParams } = new URL(request.url);
+    const workspaceId = searchParams.get('workspaceId');
+
+    await connectMongoDB();
+    const filter: any = { userId: session.userId };
+    if (workspaceId) filter.workspaceId = workspaceId;
+
+    const contacts = await WorkspaceContact.find(filter).sort({ createdAt: -1 }).lean();
+    return NextResponse.json({
+      success: true,
+      data: contacts.map((doc: any) => ({
+        ...doc,
+        id: doc._id.toString(),
+        _id: undefined,
+        __v: undefined,
+      })),
+    });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getSessionFromRequest(request);

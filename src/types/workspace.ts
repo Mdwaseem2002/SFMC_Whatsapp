@@ -45,6 +45,7 @@ export type AppScreen =
   | 'contacts'
   | 'templates'
   | 'broadcasts'
+  | 'automation'
   | 'analytics'
   | 'sfmc'
   | 'settings'
