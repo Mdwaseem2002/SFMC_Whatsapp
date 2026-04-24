@@ -99,17 +99,35 @@ function ProfileSection() {
   const { state, setProfile } = useWorkspace();
   const p = state.profile;
   const [name, setName] = useState(p?.name || '');
+  const [email, setEmail] = useState(p?.email || '');
   const [phone, setPhone] = useState(p?.phone || '');
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const handleSave = () => {
+  // Keep form in sync when profile loads from backend
+  React.useEffect(() => {
+    if (p) {
+      if (p.name) setName(p.name);
+      if (p.email) setEmail(p.email);
+      if (p.phone) setPhone(p.phone);
+    }
+  }, [p]);
+
+  const handleSave = async () => {
     if (!p) return;
-    setProfile({ ...p, name: name.trim(), phone: phone.trim() });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    setSaving(true);
+    try {
+      await setProfile({ ...p, name: name.trim(), email: email.trim(), phone: phone.trim() });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err) {
+      console.error('Failed to save profile:', err);
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const initials = (p?.name || 'U').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+  const initials = (name || p?.name || 'U').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
 
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
@@ -123,8 +141,8 @@ function ProfileSection() {
             {initials}
           </div>
           <div>
-            <p className="text-[16px] font-bold text-gray-900">{p?.name || 'User'}</p>
-            <p className="text-[13px] text-gray-500">{p?.email || ''}</p>
+            <p className="text-[16px] font-bold text-gray-900">{name || p?.name || 'User'}</p>
+            <p className="text-[13px] text-gray-500">{email || p?.email || ''}</p>
           </div>
         </div>
 
@@ -137,6 +155,7 @@ function ProfileSection() {
             <input
               value={name} onChange={e => setName(e.target.value)}
               className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#25D366]/20 focus:border-[#25D366] focus:bg-white transition-all"
+              placeholder="John Doe"
             />
           </div>
           <div>
@@ -144,8 +163,9 @@ function ProfileSection() {
               <Mail size={14} className="text-gray-400" /> Email
             </label>
             <input
-              value={p?.email || ''} disabled
-              className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-xl text-sm text-gray-500 cursor-not-allowed"
+              value={email} onChange={e => setEmail(e.target.value)}
+              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#25D366]/20 focus:border-[#25D366] focus:bg-white transition-all"
+              placeholder="name@company.com"
             />
           </div>
           <div>
@@ -155,6 +175,7 @@ function ProfileSection() {
             <input
               value={phone} onChange={e => setPhone(e.target.value)}
               className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#25D366]/20 focus:border-[#25D366] focus:bg-white transition-all"
+              placeholder="+91 99999 99999"
             />
           </div>
         </div>
@@ -163,11 +184,12 @@ function ProfileSection() {
         <div className="px-6 py-4 border-t border-gray-100 flex justify-end">
           <button
             onClick={handleSave}
-            className={`px-6 py-2.5 rounded-xl text-sm font-bold text-white shadow-sm transition-all flex items-center gap-2
+            disabled={saving}
+            className={`px-6 py-2.5 rounded-xl text-sm font-bold text-white shadow-sm transition-all flex items-center gap-2 disabled:opacity-50
               ${saved ? 'bg-emerald-500' : 'bg-[#25D366] hover:bg-[#1db954] shadow-green-600/15 hover:shadow-md'}
             `}
           >
-            {saved ? <><Check size={16} /> Saved!</> : 'Save Changes'}
+            {saving ? <><Loader2 size={16} className="animate-spin" /> Saving...</> : saved ? <><Check size={16} /> Saved!</> : 'Save Changes'}
           </button>
         </div>
       </div>

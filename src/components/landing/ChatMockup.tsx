@@ -76,11 +76,11 @@ function FloatingCard({
       }}
       className={`absolute z-20 flex items-center gap-3 px-4 py-3 rounded-2xl ${className}`}
       style={{
-        background: 'rgba(255,255,255,0.75)',
-        backdropFilter: 'blur(20px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-        border: '1px solid rgba(255,255,255,0.5)',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04)',
+        background: 'rgba(255,255,255,0.9)',
+        backdropFilter: 'blur(24px) saturate(200%)',
+        WebkitBackdropFilter: 'blur(24px) saturate(200%)',
+        border: '1px solid rgba(255,255,255,1)',
+        boxShadow: '0 16px 40px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04)',
       }}
     >
       <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${iconBg}`}>
@@ -137,14 +137,14 @@ export default function ChatMockup() {
   }, [visibleMsgs, showTyping]);
 
   return (
-    <div className="relative w-[360px]">
+    <div className="relative w-[360px] -mt-16 lg:-mt-24">
       {/* ─── Floating Stat Cards ─── */}
       <FloatingCard
         icon={<BarChart3 size={18} className="text-[#25D366]" />}
         iconBg="bg-[#25D366]/10"
         value="98.7%"
         label="Delivery Rate"
-        className="-left-16 top-[8%]"
+        className="-left-32 top-[8%]"
         delay={0}
       />
       <FloatingCard
@@ -152,7 +152,7 @@ export default function ChatMockup() {
         iconBg="bg-amber-500/10"
         value="<1.2s"
         label="Avg. Response"
-        className="-right-14 bottom-[28%]"
+        className="-right-32 bottom-[35%]"
         delay={1.5}
       />
       <FloatingCard
@@ -160,7 +160,7 @@ export default function ChatMockup() {
         iconBg="bg-blue-500/10"
         value="73%"
         label="Read Rate"
-        className="-left-10 bottom-[12%]"
+        className="-left-28 bottom-[12%]"
         delay={3}
       />
 
@@ -169,7 +169,7 @@ export default function ChatMockup() {
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 1, duration: 0.5 }}
-        className="absolute -right-8 top-[6%] z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full"
+        className="absolute -right-20 top-[6%] z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full"
         style={{
           background: 'rgba(255,255,255,0.85)',
           backdropFilter: 'blur(12px)',
@@ -189,13 +189,13 @@ export default function ChatMockup() {
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-        className="rounded-3xl overflow-hidden"
+        className="rounded-3xl overflow-hidden shadow-2xl shadow-[#25D366]/5"
         style={{
-          background: 'rgba(255,255,255,0.65)',
-          backdropFilter: 'blur(24px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-          border: '1px solid rgba(255,255,255,0.35)',
-          boxShadow: '0 24px 64px rgba(0,0,0,0.1), 0 8px 24px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.03)',
+          background: 'rgba(255,255,255,0.85)',
+          backdropFilter: 'blur(40px) saturate(200%)',
+          WebkitBackdropFilter: 'blur(40px) saturate(200%)',
+          border: '1px solid rgba(255,255,255,0.9)',
+          boxShadow: '0 40px 100px rgba(0,0,0,0.08), 0 12px 32px rgba(0,0,0,0.04), inset 0 0 0 1px rgba(255,255,255,1)',
         }}
       >
         {/* ── Chat Header ── */}
@@ -233,7 +233,7 @@ export default function ChatMockup() {
         {/* ── Chat Body ── */}
         <div
           ref={bodyRef}
-          className="min-h-[340px] max-h-[340px] overflow-y-auto px-4 py-4 flex flex-col gap-2"
+          className="min-h-[520px] max-h-[520px] overflow-y-auto px-4 py-4 flex flex-col gap-2"
           style={{
             background: `
               radial-gradient(ellipse at 20% 20%, rgba(37,211,102,0.03) 0%, transparent 60%),
@@ -274,9 +274,9 @@ export default function ChatMockup() {
                     <span
                       className="px-3 py-1.5 rounded-full text-[11px] font-semibold flex items-center gap-1 cursor-pointer"
                       style={{
-                        background: 'rgba(255,255,255,0.15)',
-                        border: '1px solid rgba(255,255,255,0.25)',
-                        color: '#ffffff',
+                        background: m.type === 'sent' ? 'rgba(255,255,255,0.15)' : '#F7F9FC',
+                        border: m.type === 'sent' ? '1px solid rgba(255,255,255,0.25)' : '1px solid rgba(15,23,42,0.06)',
+                        color: m.type === 'sent' ? '#ffffff' : '#25D366',
                       }}
                     >
                       <Truck size={11} /> {m.btn}

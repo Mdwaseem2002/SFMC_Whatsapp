@@ -104,13 +104,7 @@ export default function AppShell() {
 
         {/* Right: Notifications + User + Logout */}
         <div className="flex items-center gap-2">
-          {/* Notification bell */}
-          <button className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-400 hover:text-[#25D366] hover:bg-[#25D366]/5 transition-colors relative">
-            <Bell size={18} />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#25D366] ring-2 ring-white" />
-          </button>
-
-          <div className="w-px h-5 bg-gray-200 mx-1 hidden md:block" />
+          {/* Notifications removed per request */}
 
           {currentUser && (
             <div className="flex items-center gap-2.5">

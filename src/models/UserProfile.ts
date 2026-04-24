@@ -4,6 +4,9 @@ export interface IUserProfile extends Document {
   userId: string;
   firstName: string;
   lastName: string;
+  name: string;
+  email: string;
+  phone: string;
   company: string;
   role: string;
   teamSize: string;
@@ -14,11 +17,14 @@ export interface IUserProfile extends Document {
 const UserProfileSchema: Schema = new Schema(
   {
     userId: { type: String, required: true, unique: true, index: true },
-    firstName: { type: String, required: true },
-    lastName: { type: String, required: true },
-    company: { type: String, required: true },
-    role: { type: String, required: true },
-    teamSize: { type: String, required: true },
+    firstName: { type: String, default: '' },
+    lastName: { type: String, default: '' },
+    name: { type: String, default: '' },
+    email: { type: String, default: '' },
+    phone: { type: String, default: '' },
+    company: { type: String, default: '' },
+    role: { type: String, default: '' },
+    teamSize: { type: String, default: '' },
   },
   {
     timestamps: true,

@@ -353,7 +353,33 @@ export default function DashboardView() {
                 <span className={`w-2 h-2 rounded-full ${isLive ? 'bg-[#25D366] animate-pulse' : 'bg-gray-400'}`} />
                 {isLive ? 'Live' : 'Paused'}
               </button>
-              <button className="px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 border border-gray-200 bg-white hover:bg-gray-50 transition-all flex items-center gap-2 shadow-sm">
+              <button
+                onClick={() => {
+                  // Build CSV from dashboard data
+                  const rows = [
+                    ['Metric', 'Value'],
+                    ['Total Contacts', String(totalContacts)],
+                    ['Total Chats', String(chatStats.totalChats)],
+                    ['Sent Today', String(chatStats.sentToday)],
+                    ['Open Conversations', String(chatStats.openConversations)],
+                    [''],
+                    ['Recent Chats'],
+                    ['Name', 'Last Message', 'Time', 'Unread'],
+                    ...recentChats.map((c: any) => [c.name, `"${(c.message || '').replace(/"/g, '""')}"`, c.time, String(c.unread || 0)]),
+                  ];
+                  const csv = rows.map(r => Array.isArray(r) ? r.join(',') : r).join('\n');
+                  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `${activeWorkspace.name.replace(/\s+/g, '_')}_dashboard_${new Date().toISOString().slice(0,10)}.csv`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                }}
+                className="px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 border border-gray-200 bg-white hover:bg-gray-50 transition-all flex items-center gap-2 shadow-sm"
+              >
                 <Download size={15} /> Export
               </button>
               <button

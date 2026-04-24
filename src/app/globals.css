@@ -1,32 +1,47 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
-  --sidebar-bg: #ffffff;
-  --sidebar-border: #e2e8f0;
+  /* Core Backgrounds */
+  --background: #FFFFFF;
+  --background-alt: #F7F9FC;
+  --foreground: #0F172A;
+
+  /* Brand Colors */
+  --brand-primary: #25D366;
+  --brand-hover: #1EBE5D;
+  --glass-accent: #E6F9F0;
+
+  /* Text & Borders */
+  --text-dark: #0F172A;
+  --text-muted: #64748B;
+  --border-light: rgba(15, 23, 42, 0.06);
+
+  /* Legacy App variables */
+  --sidebar-bg: #FFFFFF;
+  --sidebar-border: #F7F9FC;
   --card-bg: rgba(255, 255, 255, 0.75);
-  --chat-bg: #f1f5f9;
-  --sent-bubble: linear-gradient(135deg, #8b5cf6, #7c3aed);
-  --received-bubble: #ffffff;
-  --primary: #8b5cf6;
-  --primary-hover: #7c3aed;
-  --primary-light: rgba(139, 92, 246, 0.1);
-  --primary-glow: rgba(139, 92, 246, 0.25);
-  --text-primary: #0f172a;
-  --text-secondary: #64748b;
-  --text-muted: #94a3b8;
-  --border-color: #e2e8f0;
-  --border-light: #f1f5f9;
+  --chat-bg: #F7F9FC;
+  --sent-bubble: linear-gradient(135deg, #25D366, #1EBE5D);
+  --received-bubble: #FFFFFF;
+  --primary: #25D366;
+  --primary-hover: #1EBE5D;
+  --primary-light: #E6F9F0;
+  --primary-glow: rgba(37, 211, 102, 0.25);
   --success: #10b981;
   --danger: #ef4444;
-  --input-bg: #f8fafc;
+  --input-bg: #FFFFFF;
   --header-bg: rgba(255, 255, 255, 0.85);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-brand: var(--brand-primary);
+  --color-brand-hover: var(--brand-hover);
+  --color-bg-alt: var(--background-alt);
+  --color-text-dark: var(--text-dark);
+  --color-text-muted: var(--text-muted);
+  --color-glass-accent: var(--glass-accent);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

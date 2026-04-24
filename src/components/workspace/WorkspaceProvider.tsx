@@ -102,7 +102,11 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 
   // Mutations (Async)
   const setProfile = useCallback(async (profile: UserProfile) => {
-    const res = await fetch('/api/user/profile', { method: 'POST', body: JSON.stringify(profile) });
+    const res = await fetch('/api/user/profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(profile),
+    });
     const json = await res.json();
     if (!res.ok || !json.success) throw new Error(json.error || 'Failed to update profile');
     setState(prev => ({ ...prev, profile: json.data }));

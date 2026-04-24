@@ -15,6 +15,12 @@ export interface UserProfile {
   email: string;
   phone: string;
   avatar: string;      // base64 data-url, or empty string for initials fallback
+  // Onboarding fields
+  firstName?: string;
+  lastName?: string;
+  company?: string;
+  role?: string;
+  teamSize?: string;
 }
 
 export interface WorkspaceContact {
