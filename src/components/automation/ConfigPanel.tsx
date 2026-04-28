@@ -52,7 +52,7 @@ function EndJourneyConfig() {
 // 1. CONTACT CREATED TRIGGER CONFIG
 // ═══════════════════════════════════
 function TriggerConfig({ node, onUpdate }: { node: FlowNode; onUpdate: (id: string, c: any) => void }) {
-  const { state } = useWorkspace();
+  const { state, activeWorkspace } = useWorkspace();
   const [contacts, setContacts] = useState<any[]>([]);
   const [loadingContacts, setLoadingContacts] = useState(false);
 
@@ -71,8 +71,13 @@ function TriggerConfig({ node, onUpdate }: { node: FlowNode; onUpdate: (id: stri
     } catch { /* ignore */ } finally { setLoadingContacts(false); }
   };
 
+  // Auto-select active workspace if none is configured
   useEffect(() => {
-    if (selectedWs) handleWsChange(selectedWs);
+    if (!selectedWs && activeWorkspace) {
+      handleWsChange(activeWorkspace.id);
+    } else if (selectedWs) {
+      handleWsChange(selectedWs);
+    }
   }, []);
 
   const addFilter = () => {
@@ -100,7 +105,9 @@ function TriggerConfig({ node, onUpdate }: { node: FlowNode; onUpdate: (id: stri
           value={selectedWs}
           onChange={(e) => handleWsChange(e.target.value)}
         >
-          <option value="">All Workspaces</option>
+          {state.workspaces.length === 0 && (
+            <option value="">No workspaces available</option>
+          )}
           {state.workspaces.map((ws) => (
             <option key={ws.id} value={ws.id}>{ws.name}</option>
           ))}

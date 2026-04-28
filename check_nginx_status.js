@@ -5,16 +5,10 @@ conn.on('ready', () => {
   console.log('Connected to VPS');
   
   const commands = [
-    // Check error logs
-    'echo "=== PM2 ERROR LOGS ==="',
-    'tail -50 /root/.pm2/logs/whatzupp-error.log 2>/dev/null || echo "no error log"',
-    'echo "=== NGINX WHATZUPP CONFIG ==="',
+    'nginx -t',
+    'systemctl status nginx --no-pager',
     'cat /etc/nginx/sites-enabled/whatzupp',
-    'echo "=== CHECKING PORT 3001 ==="',
-    'ss -tlnp | grep 3001 || echo "port 3001 not listening"',
-    'echo "=== CHECKING PORT 3000 ==="', 
-    'ss -tlnp | grep 3000 || echo "port 3000 not listening"',
-  ].join(' ; ');
+  ].join(' ; echo "===SEPARATOR===" ; ');
   
   conn.exec(commands, (err, stream) => {
     if (err) { console.error(err); conn.end(); return; }
