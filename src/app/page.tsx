@@ -311,44 +311,156 @@ const WhatsAppSVG = () => (
 );
 
 function EcosystemFlow() {
-  const nodes = [
-    { icon: <SalesforceSVG />, name: 'Data Cloud' },
-    { icon: <SalesforceSVG />, name: 'SFMC' },
-    { icon: <MessageSquare size={34} />, name: 'WhatZupp', highlight: true },
+  const sources = [
+    { icon: <SalesforceSVG />, name: 'Salesforce', color: '#00A1E0' },
+    { icon: <SalesforceSVG />, name: 'SFMC', color: '#FF6D2E' },
+    { icon: <Globe size={30} />, name: 'Global CRM', color: '#8B5CF6' },
+  ];
+  const rightNodes = [
     { icon: <WhatsAppSVG />, name: 'WhatsApp' },
     { icon: <User size={34} />, name: 'Customer' },
   ];
+
   return (
     <section className="py-14 border-y border-[#0F172A]/[0.05] bg-[#F7F9FC] overflow-hidden">
       <div className="max-w-[1160px] mx-auto px-6">
-        <p className="text-center text-xs text-gray-400 tracking-[0.08em] uppercase mb-8 font-medium">Enterprise Ecosystem Flow</p>
-        {/* Changed to flex-nowrap with horizontal scroll to keep it on one line */}
-        <div className="flex items-center justify-start md:justify-center gap-3 lg:gap-8 flex-nowrap overflow-x-auto pb-6 hide-scrollbar">
-          {nodes.map((n, i) => (
-            <React.Fragment key={i}>
-              <Reveal delay={i * 0.1}>
-                <div className="flex flex-col items-center gap-3 shrink-0">
-                  <motion.div
-                    whileHover={{ y: -4, scale: 1.05 }}
-                    className={`w-20 h-20 md:w-24 md:h-24 rounded-2xl border flex items-center justify-center transition-all ${
-                      n.highlight
-                        ? 'bg-[#E6F9F0] border-[#25D366]/30 text-[#25D366] shadow-[0_8px_24px_rgba(37,211,102,0.15)]'
-                        : 'bg-white/90 backdrop-blur border-[#0F172A]/[0.06] text-[#64748B] hover:border-[#25D366]/30 hover:text-[#25D366] shadow-[0_4px_16px_rgba(0,0,0,0.02)]'
-                    }`}
-                  >
-                    {n.icon}
-                  </motion.div>
-                  <span className="text-sm md:text-base text-[#0F172A] font-bold">{n.name}</span>
-                </div>
+        <p className="text-center text-xs text-gray-400 tracking-[0.08em] uppercase mb-10 font-medium">Enterprise Ecosystem Flow</p>
+
+        {/* ── Desktop Layout ── */}
+        <div className="hidden md:flex items-center justify-center gap-0">
+
+          {/* Left: 3 Sources stacked */}
+          <div className="flex flex-col items-end gap-4 mr-2">
+            {sources.map((s, i) => (
+              <Reveal key={i} delay={i * 0.12}>
+                <motion.div
+                  whileHover={{ x: 4, scale: 1.04 }}
+                  className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-white border border-[#0F172A]/[0.06] shadow-[0_4px_16px_rgba(0,0,0,0.03)] hover:border-[#25D366]/30 hover:shadow-[0_4px_20px_rgba(37,211,102,0.08)] transition-all cursor-default"
+                >
+                  <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+                    style={{ backgroundColor: `${s.color}12`, color: s.color }}>
+                    {s.icon}
+                  </div>
+                  <span className="text-sm font-bold text-[#0F172A] whitespace-nowrap">{s.name}</span>
+                </motion.div>
               </Reveal>
-              {i < nodes.length - 1 && (
-                <div className="w-6 md:w-12 h-[2px] bg-gradient-to-r from-[#25d366]/30 to-[#25d366]/60 relative shrink-0">
-                  <ChevronRight size={14} className="text-[#25D366] absolute right-[-4px] md:right-0 top-1/2 -translate-y-1/2" />
-                </div>
-              )}
+            ))}
+          </div>
+
+          {/* Animated arrows converging */}
+          <div className="flex flex-col items-center justify-center gap-4 mx-1 w-20 relative">
+            {[0, 1, 2].map(i => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3 + i * 0.15, duration: 0.5 }}
+                className="flex items-center w-full"
+              >
+                <div className="flex-1 h-[2px] bg-gradient-to-r from-[#25d366]/20 to-[#25d366]/60" />
+                <ChevronRight size={14} className="text-[#25D366] -ml-1 shrink-0" />
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Center: WhatZupp hub */}
+          <Reveal delay={0.35}>
+            <motion.div
+              whileHover={{ y: -4, scale: 1.05 }}
+              className="flex flex-col items-center gap-3 mx-2"
+            >
+              <div className="w-24 h-24 rounded-2xl border bg-[#E6F9F0] border-[#25D366]/30 text-[#25D366] shadow-[0_8px_32px_rgba(37,211,102,0.18)] flex items-center justify-center relative">
+                <MessageSquare size={36} />
+                {/* Pulse ring */}
+                <motion.div
+                  animate={{ scale: [1, 1.25, 1], opacity: [0.5, 0, 0.5] }}
+                  transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+                  className="absolute inset-0 rounded-2xl border-2 border-[#25D366]/30"
+                />
+              </div>
+              <span className="text-base text-[#0F172A] font-extrabold">WhatZupp</span>
+            </motion.div>
+          </Reveal>
+
+          {/* Right arrow + nodes */}
+          {rightNodes.map((n, i) => (
+            <React.Fragment key={i}>
+              <motion.div
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.5 + i * 0.15, duration: 0.5 }}
+                className="flex items-center mx-1 w-12"
+              >
+                <div className="flex-1 h-[2px] bg-gradient-to-r from-[#25d366]/30 to-[#25d366]/60" />
+                <ChevronRight size={14} className="text-[#25D366] -ml-1 shrink-0" />
+              </motion.div>
+              <Reveal delay={0.55 + i * 0.15}>
+                <motion.div whileHover={{ y: -4, scale: 1.05 }} className="flex flex-col items-center gap-3">
+                  <div className="w-20 h-20 rounded-2xl border bg-white/90 backdrop-blur border-[#0F172A]/[0.06] text-[#64748B] hover:border-[#25D366]/30 hover:text-[#25D366] shadow-[0_4px_16px_rgba(0,0,0,0.02)] flex items-center justify-center transition-all">
+                    {n.icon}
+                  </div>
+                  <span className="text-sm text-[#0F172A] font-bold">{n.name}</span>
+                </motion.div>
+              </Reveal>
             </React.Fragment>
           ))}
         </div>
+
+        {/* ── Mobile Layout ── */}
+        <div className="md:hidden flex flex-col items-center gap-4">
+          {/* Sources row */}
+          <div className="flex items-center justify-center gap-3 flex-wrap">
+            {sources.map((s, i) => (
+              <div key={i} className="flex flex-col items-center gap-2">
+                <div className="w-16 h-16 rounded-xl border bg-white border-[#0F172A]/[0.06] flex items-center justify-center shadow-sm"
+                  style={{ color: s.color }}>
+                  {s.icon}
+                </div>
+                <span className="text-xs font-bold text-[#0F172A]">{s.name}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Down arrows */}
+          <div className="flex flex-col items-center gap-0.5">
+            <div className="w-[2px] h-6 bg-gradient-to-b from-[#25d366]/20 to-[#25d366]/60" />
+            <ChevronRight size={14} className="text-[#25D366] rotate-90" />
+          </div>
+
+          {/* WhatZupp */}
+          <div className="flex flex-col items-center gap-2">
+            <div className="w-20 h-20 rounded-2xl bg-[#E6F9F0] border border-[#25D366]/30 text-[#25D366] shadow-[0_6px_24px_rgba(37,211,102,0.15)] flex items-center justify-center">
+              <MessageSquare size={32} />
+            </div>
+            <span className="text-sm text-[#0F172A] font-extrabold">WhatZupp</span>
+          </div>
+
+          {/* Down arrows */}
+          <div className="flex flex-col items-center gap-0.5">
+            <div className="w-[2px] h-6 bg-gradient-to-b from-[#25d366]/20 to-[#25d366]/60" />
+            <ChevronRight size={14} className="text-[#25D366] rotate-90" />
+          </div>
+
+          {/* Right nodes */}
+          <div className="flex items-center justify-center gap-4">
+            {rightNodes.map((n, i) => (
+              <React.Fragment key={i}>
+                <div className="flex flex-col items-center gap-2">
+                  <div className="w-16 h-16 rounded-xl border bg-white/90 border-[#0F172A]/[0.06] text-[#64748B] flex items-center justify-center shadow-sm">
+                    {n.icon}
+                  </div>
+                  <span className="text-xs font-bold text-[#0F172A]">{n.name}</span>
+                </div>
+                {i < rightNodes.length - 1 && (
+                  <div className="w-6 h-[2px] bg-gradient-to-r from-[#25d366]/30 to-[#25d366]/60 relative mt-[-20px]">
+                    <ChevronRight size={12} className="text-[#25D366] absolute right-[-2px] top-1/2 -translate-y-1/2" />
+                  </div>
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+        </div>
+
       </div>
     </section>
   );

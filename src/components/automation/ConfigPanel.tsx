@@ -71,14 +71,12 @@ function TriggerConfig({ node, onUpdate }: { node: FlowNode; onUpdate: (id: stri
     } catch { /* ignore */ } finally { setLoadingContacts(false); }
   };
 
-  // Auto-select active workspace if none is configured
+  // Always lock to the active workspace
   useEffect(() => {
-    if (!selectedWs && activeWorkspace) {
+    if (activeWorkspace) {
       handleWsChange(activeWorkspace.id);
-    } else if (selectedWs) {
-      handleWsChange(selectedWs);
     }
-  }, []);
+  }, [activeWorkspace?.id]);
 
   const addFilter = () => {
     const f = [...filters, { field: 'name', operator: 'equals', value: '' }];
@@ -97,21 +95,13 @@ function TriggerConfig({ node, onUpdate }: { node: FlowNode; onUpdate: (id: stri
     <div className="space-y-5">
       <h3 className="text-sm font-bold text-slate-800">Contact Created Trigger</h3>
 
-      {/* Workspace select */}
+      {/* Workspace (locked to active workspace) */}
       <div>
-        <label className="block text-xs font-semibold text-slate-500 mb-1">Select Workspace</label>
-        <select
-          className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:ring-1 focus:ring-slate-300"
-          value={selectedWs}
-          onChange={(e) => handleWsChange(e.target.value)}
-        >
-          {state.workspaces.length === 0 && (
-            <option value="">No workspaces available</option>
-          )}
-          {state.workspaces.map((ws) => (
-            <option key={ws.id} value={ws.id}>{ws.name}</option>
-          ))}
-        </select>
+        <label className="block text-xs font-semibold text-slate-500 mb-1">Workspace</label>
+        <div className="w-full border border-slate-200 rounded-lg p-2 text-sm bg-slate-50 text-slate-700 font-medium flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-[#25D366] shrink-0" />
+          {activeWorkspace?.name || 'No workspace selected'}
+        </div>
       </div>
 
       {/* Contact preview */}
